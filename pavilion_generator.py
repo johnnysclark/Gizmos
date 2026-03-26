@@ -6,19 +6,80 @@ theory and Aldo van Eyck's 1966 Sonsbeek Pavilion. A 50'x50' open-air
 pavilion on a marsh site, composed of wall segments on a rotated grid
 with curved wall elements, a floating deck, and apertures.
 
-Paste this entire script into a GhPython component. Connect sliders to
-the inputs listed below. All inputs have defaults so the component runs
-immediately with no connections.
+SETUP: Paste this entire script into a GhPython component in Grasshopper.
+Right-click the component and add the inputs listed below (matching names
+exactly). Connect Number Sliders or Toggles to each. All inputs have
+defaults, so the component runs immediately with zero connections.
 
-Outputs:
+Inputs (add these as GhPython component inputs — names must match exactly):
+
+  BOUNDARY
+    boundary_size           float   50.0    Side length of square boundary (feet)
+
+  GRID
+    grid_spacing_x          float   5.0     Column spacing in X direction (feet)
+    grid_spacing_y          float   4.0     Row spacing in Y direction (feet)
+    grid_rotation           float   15.0    Grid rotation angle (degrees, CCW)
+    grid_offset_x           float   1.5     Grid origin X offset from center (feet)
+    grid_offset_y           float   0.0     Grid origin Y offset from center (feet)
+    overshoot_margin        float   8.0     How far grid extends beyond boundary (feet)
+
+  WALL SELECTION
+    seed                    int     42      Random seed for which walls appear
+    wall_probability_x      float   0.35    Probability a horizontal segment becomes a wall (0-1)
+    wall_probability_y      float   0.28    Probability a vertical segment becomes a wall (0-1)
+
+  WALL GEOMETRY
+    wall_thickness          float   0.5     Wall thickness (feet)
+    wall_height_min         float   8.0     Minimum wall height (feet)
+    wall_height_max         float   14.0    Maximum wall height (feet)
+    wall_height_seed        int     7       Random seed for wall height assignment
+
+  ARC WALLS
+    num_arcs                int     3       Number of curved wall elements
+    arc_seed                int     99      Random seed for arc placement
+    arc_radius_min          float   3.0     Minimum arc radius (feet)
+    arc_radius_max          float   8.0     Maximum arc radius (feet)
+    arc_angle_min           float   60.0    Minimum arc sweep (degrees)
+    arc_angle_max           float   180.0   Maximum arc sweep (degrees)
+    arc_thickness           float   0.5     Arc wall thickness (feet)
+    arc_height_min          float   8.0     Minimum arc wall height (feet)
+    arc_height_max          float   12.0    Maximum arc wall height (feet)
+    arc_snap_to_grid        bool    True    Snap arc centers to grid intersections
+
+  DECK
+    deck_height             float   2.5     Deck elevation above ground (feet)
+    deck_thickness          float   0.33    Deck slab thickness (feet)
+    deck_overshoot          float   1.0     Deck extension beyond boundary (feet)
+
+  APERTURES
+    num_apertures           int     12      Total number of aperture cuts
+    aperture_seed           int     55      Random seed for aperture placement
+    aperture_width          float   1.5     Aperture opening width (feet)
+    aperture_height         float   3.0     Aperture opening height (feet)
+    apertures_on_walls      bool    True    Enable rectangular cuts in walls
+    apertures_on_deck       bool    True    Enable rectangular cuts in deck
+
+  DISPLAY
+    trim_at_boundary        bool    True    Clip geometry to boundary box
+    show_boundary           bool    True    Output the boundary rectangle curve
+
+  GRADIENTS (optional — leave at 0 to disable)
+    density_gradient_dir    float   0.0     Direction of wall density gradient (degrees)
+    density_gradient_strength float  0.0    Strength of density gradient (0-1)
+    height_gradient_dir     float   90.0    Direction of wall height gradient (degrees)
+    height_gradient_strength float   0.0    Strength of height gradient (0-1)
+
+Outputs (add these as GhPython component outputs — names must match exactly):
     walls           - list of Brep: trimmed wall solids inside boundary
     arcs            - list of Brep: trimmed curved wall solids
     deck            - Brep: the floating deck platform
     boundary_crv    - Curve: the 50'x50' boundary rectangle
     cutting_volumes - list of Brep: aperture cutting solids (for review)
     ground_plane    - Brep: flat ground surface
-    full_field_walls- list of Brep: all walls before boundary trim
-    info            - str: summary text
+    full_field_walls- list of Brep: all walls before boundary trim (extends past boundary)
+    info            - str: summary text with wall counts, grid stats, and any warnings
+    plan_curves     - list of Curve: wall/arc footprints projected to z=0 for plan views
 """
 
 import Rhino.Geometry as rg
