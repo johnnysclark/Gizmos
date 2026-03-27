@@ -3,8 +3,12 @@ Pavilion Generator (Simple) — GhPython Component for Rhino 8 / Grasshopper
 
 Generates field-condition pavilions inspired by Stan Allen's field conditions
 theory and Aldo van Eyck's 1966 Sonsbeek Pavilion. A 50'x50' open-air
-pavilion on a marsh site, composed of wall segments on a rotated grid
-with semicircular wall disruptions, a floating deck, and wall apertures.
+pavilion on a marsh site.
+
+Walls are generated from tangent lines between randomly placed circles,
+creating a varied, non-orthogonal field of wall elements. Some circles
+also produce semicircular arc walls. Apertures are random-sized boxes
+that cut through all geometry (walls, arcs, and deck).
 
 SETUP: Paste this entire script into a GhPython component in Grasshopper.
 Right-click the component and add the inputs listed below (matching names
@@ -13,43 +17,43 @@ component runs immediately with zero connections.
 
 Inputs (add these as GhPython component inputs — names must match exactly):
 
-  GRID
-    grid_spacing_x          float   5.0     Column spacing in X direction (feet)
-    grid_spacing_y          float   4.0     Row spacing in Y direction (feet)
+  CIRCLES (source geometry for tangent-line walls)
+    num_circles             int     8       Number of circles scattered in the field
+    circle_radius_min       float   2.0     Minimum circle radius (feet)
+    circle_radius_max       float   8.0     Maximum circle radius (feet)
+    circle_seed             int     42      Random seed for circle placement
 
   WALL SELECTION
-    seed                    int     42      Random seed for which walls appear
-    wall_probability_x      float   0.35    Chance a horizontal segment becomes a wall (0-1)
-    wall_probability_y      float   0.28    Chance a vertical segment becomes a wall (0-1)
+    wall_probability        float   0.4     Chance each tangent line becomes a wall (0-1)
+    seed                    int     42      Random seed for wall selection
 
   WALL GEOMETRY
     wall_thickness          float   0.5     Wall thickness (feet)
     wall_height_min         float   8.0     Minimum wall height (feet)
     wall_height_max         float   14.0    Maximum wall height (feet)
-    wall_height_seed        int     7       Random seed for wall height assignment
+    wall_height_seed        int     7       Random seed for wall heights
 
-  ARC WALLS (semicircles that replace the middle of a straight wall)
-    num_arcs                int     3       Number of walls to convert to arcs
-    arc_seed                int     99      Random seed for which walls get arcs
+  ARC WALLS (semicircular walls from the circles themselves)
+    num_arcs                int     3       Number of circles that also produce arc walls
+    arc_seed                int     99      Random seed for arc selection
 
   DECK
     deck_height             float   2.5     Deck elevation above ground (feet)
     deck_thickness          float   0.33    Deck slab thickness (feet)
 
-  APERTURES (rectangular cuts in walls only)
+  APERTURES (random-sized box cuts through ALL geometry)
     num_apertures           int     12      Total number of aperture cuts
     aperture_seed           int     55      Random seed for aperture placement
-    aperture_width          float   1.5     Aperture opening width (feet)
-    aperture_height         float   3.0     Aperture opening height (feet)
 
 Outputs (add these as GhPython component outputs — names must match exactly):
     walls           - list of Brep: trimmed wall solids inside boundary
-    arcs            - list of Brep: trimmed semicircular wall solids
+    arcs            - list of Brep: trimmed arc wall solids
     deck            - Brep: the floating deck platform
     boundary_crv    - Curve: the 50'x50' boundary rectangle
-    cutting_volumes - list of Brep: aperture cutting solids (for review)
+    cutting_volumes - list of Brep: aperture cutting boxes (for review)
     ground_plane    - Brep: flat ground surface
     full_field_walls- list of Brep: all walls before boundary trim
+    circles_crv     - list of Curve: the source circles (for reference)
     info            - str: summary text
 """
 
@@ -61,40 +65,30 @@ import random
 # SECTION 1: INPUT DEFAULTS
 # ============================================================================
 
-# --- Grid ---
-if grid_spacing_x is None: grid_spacing_x = 5.0
-if grid_spacing_y is None: grid_spacing_y = 4.0
+if num_circles is None: num_circles = 8
+if circle_radius_min is None: circle_radius_min = 2.0
+if circle_radius_max is None: circle_radius_max = 8.0
+if circle_seed is None: circle_seed = 42
 
-# --- Wall selection ---
+if wall_probability is None: wall_probability = 0.4
 if seed is None: seed = 42
-if wall_probability_x is None: wall_probability_x = 0.35
-if wall_probability_y is None: wall_probability_y = 0.28
 
-# --- Wall geometry ---
 if wall_thickness is None: wall_thickness = 0.5
 if wall_height_min is None: wall_height_min = 8.0
 if wall_height_max is None: wall_height_max = 14.0
 if wall_height_seed is None: wall_height_seed = 7
 
-# --- Arc walls ---
 if num_arcs is None: num_arcs = 3
 if arc_seed is None: arc_seed = 99
 
-# --- Deck ---
 if deck_height is None: deck_height = 2.5
 if deck_thickness is None: deck_thickness = 0.33
 
-# --- Apertures ---
 if num_apertures is None: num_apertures = 12
 if aperture_seed is None: aperture_seed = 55
-if aperture_width is None: aperture_width = 1.5
-if aperture_height is None: aperture_height = 3.0
 
 # --- Hardcoded constants ---
-BOUNDARY_SIZE = 50.0
-GRID_ROTATION = 15.0      # degrees
-GRID_OFFSET_X = 1.5
-GRID_OFFSET_Y = 0.0
+BOUNDARY = 50.0
 OVERSHOOT = 8.0
 DECK_OVERSHOOT = 1.0
 
@@ -146,7 +140,7 @@ def safe_boolean_intersection(brep, cutter, info_list):
 
 
 def perp_offset_pts(pt_a, pt_b, thickness):
-    """Return 4 corner points offset perpendicular to a line segment."""
+    """4 corner points offset perpendicular to a line segment."""
     dx = pt_b.X - pt_a.X
     dy = pt_b.Y - pt_a.Y
     length = math.sqrt(dx * dx + dy * dy)
@@ -162,77 +156,130 @@ def perp_offset_pts(pt_a, pt_b, thickness):
     )
 
 
+def external_tangent_lines(c1_x, c1_y, c1_r, c2_x, c2_y, c2_r):
+    """Compute external tangent line segments between two circles.
+    Returns a list of (Point3d, Point3d) tuples — 0, 1, or 2 tangent lines."""
+    dx = c2_x - c1_x
+    dy = c2_y - c1_y
+    dist = math.sqrt(dx * dx + dy * dy)
+    if dist < 0.001:
+        return []
+    # External tangents exist when circles don't fully overlap
+    r_diff = abs(c1_r - c2_r)
+    if dist <= r_diff:
+        return []
+
+    # Angle between centers
+    angle = math.atan2(dy, dx)
+
+    # Angle offset for external tangent
+    cos_val = (c1_r - c2_r) / dist
+    cos_val = max(-1.0, min(1.0, cos_val))
+    alpha = math.acos(cos_val)
+
+    tangents = []
+    for sign in [1, -1]:
+        a = angle + sign * alpha + math.pi / 2.0
+        # Tangent point on circle 1
+        t1_x = c1_x + c1_r * math.cos(a)
+        t1_y = c1_y + c1_r * math.sin(a)
+        # Tangent point on circle 2
+        t2_x = c2_x + c2_r * math.cos(a)
+        t2_y = c2_y + c2_r * math.sin(a)
+        tangents.append((rg.Point3d(t1_x, t1_y, 0), rg.Point3d(t2_x, t2_y, 0)))
+
+    return tangents
+
+
+def internal_tangent_lines(c1_x, c1_y, c1_r, c2_x, c2_y, c2_r):
+    """Compute internal (cross) tangent line segments between two circles.
+    Returns a list of (Point3d, Point3d) tuples — 0, 1, or 2 tangent lines."""
+    dx = c2_x - c1_x
+    dy = c2_y - c1_y
+    dist = math.sqrt(dx * dx + dy * dy)
+    if dist < 0.001:
+        return []
+    r_sum = c1_r + c2_r
+    if dist <= r_sum:
+        return []
+
+    angle = math.atan2(dy, dx)
+    cos_val = r_sum / dist
+    cos_val = max(-1.0, min(1.0, cos_val))
+    alpha = math.acos(cos_val)
+
+    tangents = []
+    for sign in [1, -1]:
+        a1 = angle + sign * alpha + math.pi / 2.0
+        a2 = angle + math.pi - sign * alpha + math.pi / 2.0
+        t1_x = c1_x + c1_r * math.cos(a1)
+        t1_y = c1_y + c1_r * math.sin(a1)
+        t2_x = c2_x + c2_r * math.cos(a2)
+        t2_y = c2_y + c2_r * math.sin(a2)
+        tangents.append((rg.Point3d(t1_x, t1_y, 0), rg.Point3d(t2_x, t2_y, 0)))
+
+    return tangents
+
+
 # ============================================================================
-# SECTION 3: GRID GENERATION
-# Individual wall segments on a rotated grid extending beyond the boundary.
+# SECTION 3: CIRCLE GENERATION
+# Scatter circles across the field (extending beyond boundary). These are
+# the source geometry — tangent lines between them become walls.
 # ============================================================================
 
-center_x = BOUNDARY_SIZE / 2.0
-center_y = BOUNDARY_SIZE / 2.0
-center_pt = rg.Point3d(center_x, center_y, 0)
+center_x = BOUNDARY / 2.0
+center_y = BOUNDARY / 2.0
 
-field_min_x = -OVERSHOOT + GRID_OFFSET_X
-field_max_x = BOUNDARY_SIZE + OVERSHOOT + GRID_OFFSET_X
-field_min_y = -OVERSHOOT + GRID_OFFSET_Y
-field_max_y = BOUNDARY_SIZE + OVERSHOOT + GRID_OFFSET_Y
+circ_rng = random.Random(circle_seed)
 
-x_positions = []
-pos = field_min_x
-while pos <= field_max_x:
-    x_positions.append(pos)
-    pos += grid_spacing_x
+circle_data = []   # (cx, cy, radius)
+circles_crv = []   # output: NurbsCurve list for visualization
 
-y_positions = []
-pos = field_min_y
-while pos <= field_max_y:
-    y_positions.append(pos)
-    pos += grid_spacing_y
+for _ in range(int(num_circles)):
+    cx = rand_range(circ_rng, -OVERSHOOT * 0.5, BOUNDARY + OVERSHOOT * 0.5)
+    cy = rand_range(circ_rng, -OVERSHOOT * 0.5, BOUNDARY + OVERSHOOT * 0.5)
+    r = rand_range(circ_rng, circle_radius_min, circle_radius_max)
+    circle_data.append((cx, cy, r))
+    circ = rg.Circle(rg.Plane(rg.Point3d(cx, cy, 0), rg.Vector3d.ZAxis), r)
+    circles_crv.append(circ.ToNurbsCurve())
 
-rot_rad = math.radians(GRID_ROTATION)
-rotation_xform = rg.Transform.Rotation(rot_rad, rg.Vector3d.ZAxis, center_pt)
-
-# Individual segments: each cell edge is one segment
-segments = []  # (Line, "x" or "y")
-
-for y_val in y_positions:
-    for i in range(len(x_positions) - 1):
-        pt_a = rg.Point3d(x_positions[i], y_val, 0)
-        pt_b = rg.Point3d(x_positions[i + 1], y_val, 0)
-        pt_a.Transform(rotation_xform)
-        pt_b.Transform(rotation_xform)
-        segments.append((rg.Line(pt_a, pt_b), "x"))
-
-for x_val in x_positions:
-    for j in range(len(y_positions) - 1):
-        pt_a = rg.Point3d(x_val, y_positions[j], 0)
-        pt_b = rg.Point3d(x_val, y_positions[j + 1], 0)
-        pt_a.Transform(rotation_xform)
-        pt_b.Transform(rotation_xform)
-        segments.append((rg.Line(pt_a, pt_b), "y"))
-
-info_messages.append("Grid: {} segments".format(len(segments)))
+info_messages.append("Circles: {} placed".format(len(circle_data)))
 
 # ============================================================================
-# SECTION 4: WALL SELECTION & BREP GENERATION
+# SECTION 4: TANGENT LINE WALL GENERATION
+# For each pair of circles, compute external and internal tangent lines.
+# Probabilistically select tangent lines as walls with random heights.
 # ============================================================================
 
 wall_rng = random.Random(seed)
 height_rng = random.Random(wall_height_seed)
 
-selected_walls = []  # (Line, direction, height)
+all_tangent_segs = []  # (pt_a, pt_b) for all tangent lines
 
-for seg, direction in segments:
-    prob = wall_probability_x if direction == "x" else wall_probability_y
-    if wall_rng.random() < prob:
-        h = rand_range(height_rng, wall_height_min, wall_height_max)
-        selected_walls.append((seg, direction, h))
+for i in range(len(circle_data)):
+    for j in range(i + 1, len(circle_data)):
+        c1 = circle_data[i]
+        c2 = circle_data[j]
+        # External tangents
+        ext = external_tangent_lines(c1[0], c1[1], c1[2],
+                                     c2[0], c2[1], c2[2])
+        all_tangent_segs.extend(ext)
+        # Internal tangents
+        intn = internal_tangent_lines(c1[0], c1[1], c1[2],
+                                      c2[0], c2[1], c2[2])
+        all_tangent_segs.extend(intn)
 
-# Build wall Breps
+info_messages.append("Tangent lines found: {}".format(len(all_tangent_segs)))
+
+# Select walls and build Breps
 wall_breps_pre_trim = []
-wall_segment_data = []
+wall_segment_data = []  # (pt_a, pt_b, height) for aperture placement
 
-for seg, direction, h in selected_walls:
-    corners = perp_offset_pts(seg.From, seg.To, wall_thickness)
+for pt_a, pt_b in all_tangent_segs:
+    if wall_rng.random() >= wall_probability:
+        continue
+    h = rand_range(height_rng, wall_height_min, wall_height_max)
+    corners = perp_offset_pts(pt_a, pt_b, wall_thickness)
     if corners is None:
         continue
     c0, c1, c2, c3 = corners
@@ -240,92 +287,43 @@ for seg, direction, h in selected_walls:
     brep = extrude_closed_crv(base_crv, h)
     if brep:
         wall_breps_pre_trim.append(brep)
-        wall_segment_data.append((seg, direction, h))
+        wall_segment_data.append((pt_a, pt_b, h))
 
 full_field_walls = list(wall_breps_pre_trim)
-info_messages.append("Walls: {} selected, {} built".format(
-    len(selected_walls), len(wall_breps_pre_trim)))
+info_messages.append("Walls: {} built from tangent lines".format(
+    len(wall_breps_pre_trim)))
 
 # ============================================================================
-# SECTION 5: ARC WALLS — SEMICIRCLES REPLACING STRAIGHT WALLS
-# Randomly pick straight walls. Split each at its midpoint: the first half
-# stays straight, the second half is replaced by a semicircle bulging
-# outward with the same wall height and thickness.
+# SECTION 5: ARC WALLS — SEMICIRCLES FROM SOURCE CIRCLES
+# Pick some of the source circles and extrude semicircular thick walls
+# from them, using the circle's own radius and a random height.
 # ============================================================================
 
 arc_rng = random.Random(arc_seed)
 arc_breps_pre_trim = []
 
-if len(wall_breps_pre_trim) > 0 and int(num_arcs) > 0:
-    # Pick which walls get converted (without replacement)
-    arc_count = min(int(num_arcs), len(wall_breps_pre_trim))
-    arc_indices = arc_rng.sample(range(len(wall_breps_pre_trim)), arc_count)
-
-    walls_to_remove = set()
+if len(circle_data) > 0 and int(num_arcs) > 0:
+    arc_count = min(int(num_arcs), len(circle_data))
+    arc_indices = arc_rng.sample(range(len(circle_data)), arc_count)
 
     for idx in arc_indices:
-        seg, direction, h = wall_segment_data[idx]
+        cx, cy, r = circle_data[idx]
+        arc_h = rand_range(arc_rng, wall_height_min, wall_height_max)
 
-        # Midpoint of the wall segment
-        mid_pt = rg.Point3d(
-            (seg.From.X + seg.To.X) / 2.0,
-            (seg.From.Y + seg.To.Y) / 2.0, 0)
+        # Random start angle for the semicircle
+        start_rad = rand_range(arc_rng, 0, 2 * math.pi)
 
-        # Wall direction and perpendicular
-        dx = seg.To.X - seg.From.X
-        dy = seg.To.Y - seg.From.Y
-        seg_len = math.sqrt(dx * dx + dy * dy)
-        if seg_len < 0.001:
-            continue
+        r_inner = max(0.1, r - wall_thickness / 2.0)
+        r_outer = r + wall_thickness / 2.0
 
-        # Semicircle radius = half the segment length / 2
-        # (the arc replaces the second half of the wall)
-        half_len = seg_len / 2.0
-        radius = half_len / 2.0
-        if radius < 0.5:
-            continue
+        c_pt = rg.Point3d(cx, cy, 0)
+        arc_plane = rg.Plane(c_pt, rg.Vector3d.ZAxis)
 
-        # Arc center is at 3/4 point of the segment
-        arc_center = rg.Point3d(
-            seg.From.X + 0.75 * dx,
-            seg.From.Y + 0.75 * dy, 0)
+        # Build outer and inner semicircular arcs (pi radians = 180 degrees)
+        outer_arc = rg.Arc(arc_plane, r_outer, math.pi)
+        inner_arc = rg.Arc(arc_plane, r_inner, math.pi)
 
-        # Perpendicular direction for the bulge (pick one side randomly)
-        perp_x = -dy / seg_len
-        perp_y = dx / seg_len
-        if arc_rng.random() < 0.5:
-            perp_x, perp_y = -perp_x, -perp_y
-
-        # Build the semicircle: arc from midpoint to endpoint, bulging outward
-        arc_plane = rg.Plane(arc_center, rg.Vector3d.ZAxis)
-
-        # Start point (midpoint of wall), end point (end of wall), interior point
-        interior_pt = rg.Point3d(
-            arc_center.X + perp_x * radius,
-            arc_center.Y + perp_y * radius, 0)
-
-        arc_obj = rg.Arc(mid_pt, interior_pt, seg.To)
-        arc_radius = arc_obj.Radius
-
-        # Build thick arc profile
-        r_inner = max(0.1, arc_radius - wall_thickness / 2.0)
-        r_outer = arc_radius + wall_thickness / 2.0
-        arc_cen = arc_obj.Center
-
-        # Rebuild inner/outer arcs using the same center and angles
-        arc_plane2 = rg.Plane(arc_cen, rg.Vector3d.ZAxis)
-        outer_arc = rg.Arc(arc_plane2, r_outer, arc_obj.AngleRadians)
-        inner_arc = rg.Arc(arc_plane2, r_inner, arc_obj.AngleRadians)
-
-        # Rotate to match the original arc's start angle
-        start_angle = math.atan2(
-            mid_pt.Y - arc_cen.Y,
-            mid_pt.X - arc_cen.X)
-        default_start = math.atan2(
-            outer_arc.StartPoint.Y - arc_cen.Y,
-            outer_arc.StartPoint.X - arc_cen.X)
-        angle_diff = start_angle - default_start
-        rot_xform = rg.Transform.Rotation(angle_diff, rg.Vector3d.ZAxis, arc_cen)
+        rot_xform = rg.Transform.Rotation(start_rad, rg.Vector3d.ZAxis, c_pt)
 
         outer_crv = outer_arc.ToNurbsCurve()
         inner_crv = inner_arc.ToNurbsCurve()
@@ -338,29 +336,11 @@ if len(wall_breps_pre_trim) > 0 and int(num_arcs) > 0:
 
         joined = rg.Curve.JoinCurves([outer_crv, cap2, inner_crv, cap1], 0.01)
         if joined and len(joined) > 0 and joined[0].IsClosed:
-            arc_brep = extrude_closed_crv(joined[0], h)
+            arc_brep = extrude_closed_crv(joined[0], arc_h)
             if arc_brep:
                 arc_breps_pre_trim.append(arc_brep)
-                walls_to_remove.add(idx)
-
-                # Rebuild the first half as a shorter straight wall
-                corners = perp_offset_pts(seg.From, mid_pt, wall_thickness)
-                if corners:
-                    c0, c1, c2, c3 = corners
-                    half_crv = rg.PolylineCurve([c0, c1, c2, c3, c0])
-                    half_brep = extrude_closed_crv(half_crv, h)
-                    if half_brep:
-                        wall_breps_pre_trim[idx] = half_brep
-                        walls_to_remove.discard(idx)
         else:
-            info_messages.append("Arc {} failed to close".format(idx))
-
-    # Remove walls that were fully replaced
-    if walls_to_remove:
-        wall_breps_pre_trim = [b for i, b in enumerate(wall_breps_pre_trim)
-                               if i not in walls_to_remove]
-        wall_segment_data = [d for i, d in enumerate(wall_segment_data)
-                             if i not in walls_to_remove]
+            info_messages.append("Arc from circle {} failed to close".format(idx))
 
 info_messages.append("Arcs: {} semicircles built".format(len(arc_breps_pre_trim)))
 
@@ -369,7 +349,7 @@ info_messages.append("Arcs: {} semicircles built".format(len(arc_breps_pre_trim)
 # Floating platform — the horizontal datum between marsh and wall field.
 # ============================================================================
 
-deck_ext = BOUNDARY_SIZE + 2.0 * DECK_OVERSHOOT
+deck_ext = BOUNDARY + 2.0 * DECK_OVERSHOOT
 deck_origin = rg.Point3d(center_x - deck_ext / 2.0,
                          center_y - deck_ext / 2.0, deck_height)
 deck_top = rg.Point3d(center_x + deck_ext / 2.0,
@@ -381,112 +361,105 @@ info_messages.append("Deck: {:.1f}x{:.1f} at z={:.1f}".format(
     deck_ext, deck_ext, deck_height))
 
 # ============================================================================
-# SECTION 7: APERTURES — WALL CUTS ONLY
-# Rectangular voids in walls for transparency and framed views.
+# SECTION 7: APERTURES — RANDOM-SIZED BOXES CUTTING THROUGH ALL GEOMETRY
+# Each aperture is a randomly sized and placed box. They boolean-difference
+# through walls, arcs, AND the deck.
 # ============================================================================
 
-aperture_rng = random.Random(aperture_seed)
+ap_rng = random.Random(aperture_seed)
 cutting_volumes = []
-aperture_depth = wall_thickness * 3.0
 
-if len(wall_breps_pre_trim) > 0 and int(num_apertures) > 0:
-    skip_booleans = len(wall_breps_pre_trim) > 50
+# Generate random cutting boxes scattered within the boundary
+for _ in range(int(num_apertures)):
+    # Random position within the boundary
+    ax = rand_range(ap_rng, 2, BOUNDARY - 2)
+    ay = rand_range(ap_rng, 2, BOUNDARY - 2)
+
+    # Random size for each aperture
+    ap_w = rand_range(ap_rng, 0.8, 3.0)    # width along X
+    ap_d = rand_range(ap_rng, 0.8, 3.0)    # depth along Y
+    ap_h = rand_range(ap_rng, 1.5, 6.0)    # height
+    az = rand_range(ap_rng, 0, wall_height_max - ap_h)  # base Z
+
+    # Random rotation so cuts aren't all axis-aligned
+    ap_angle = rand_range(ap_rng, 0, math.pi)
+    ap_center = rg.Point3d(ax, ay, az)
+    ap_plane = rg.Plane(ap_center, rg.Vector3d.ZAxis)
+    ap_rot = rg.Transform.Rotation(ap_angle, rg.Vector3d.ZAxis, ap_center)
+    ap_plane.Transform(ap_rot)
+
+    cut_box = rg.Box(ap_plane,
+                     rg.Interval(-ap_w / 2.0, ap_w / 2.0),
+                     rg.Interval(-ap_d / 2.0, ap_d / 2.0),
+                     rg.Interval(0, ap_h))
+    cut_brep = cut_box.ToBrep()
+    if cut_brep:
+        cutting_volumes.append(cut_brep)
+
+info_messages.append("Apertures: {} random cutting boxes".format(
+    len(cutting_volumes)))
+
+# Apply boolean difference to all walls
+if cutting_volumes:
+    skip_booleans = (len(wall_breps_pre_trim) + len(arc_breps_pre_trim)) > 60
     if skip_booleans:
-        info_messages.append("Over 50 walls — skipping booleans for speed")
+        info_messages.append("Over 60 elements — skipping booleans for speed")
+    else:
+        for i in range(len(wall_breps_pre_trim)):
+            wall_breps_pre_trim[i] = safe_boolean_difference(
+                wall_breps_pre_trim[i], cutting_volumes, info_messages)
 
-    wall_cutters = {}
-    for _ in range(int(num_apertures)):
-        w_idx = aperture_rng.randint(0, len(wall_breps_pre_trim) - 1)
-        seg, direction, w_h = wall_segment_data[w_idx]
+        for i in range(len(arc_breps_pre_trim)):
+            arc_breps_pre_trim[i] = safe_boolean_difference(
+                arc_breps_pre_trim[i], cutting_volumes, info_messages)
 
-        t = rand_range(aperture_rng, 0.15, 0.85)
-        pt_on_wall = rg.Point3d(
-            seg.From.X + t * (seg.To.X - seg.From.X),
-            seg.From.Y + t * (seg.To.Y - seg.From.Y), 0)
-
-        z_base = rand_range(aperture_rng, 0, max(0.1, w_h - aperture_height))
-
-        dx = seg.To.X - seg.From.X
-        dy = seg.To.Y - seg.From.Y
-        seg_len = math.sqrt(dx * dx + dy * dy)
-        if seg_len < 0.001:
-            continue
-        wall_dir = rg.Vector3d(dx / seg_len, dy / seg_len, 0)
-        wall_perp = rg.Vector3d(-wall_dir.Y, wall_dir.X, 0)
-
-        cut_origin = rg.Point3d(
-            pt_on_wall.X - wall_dir.X * aperture_width / 2.0
-            - wall_perp.X * aperture_depth / 2.0,
-            pt_on_wall.Y - wall_dir.Y * aperture_width / 2.0
-            - wall_perp.Y * aperture_depth / 2.0,
-            z_base)
-        cut_plane = rg.Plane(cut_origin, wall_dir, wall_perp)
-        cut_box = rg.Box(cut_plane,
-                         rg.Interval(0, aperture_width),
-                         rg.Interval(0, aperture_depth),
-                         rg.Interval(0, aperture_height))
-        cut_brep = cut_box.ToBrep()
-        if cut_brep:
-            cutting_volumes.append(cut_brep)
-            if not skip_booleans:
-                wall_cutters.setdefault(w_idx, []).append(cut_brep)
-
-    if not skip_booleans:
-        for w_idx, cutters in wall_cutters.items():
-            wall_breps_pre_trim[w_idx] = safe_boolean_difference(
-                wall_breps_pre_trim[w_idx], cutters, info_messages)
-
-info_messages.append("Apertures: {} cuts".format(len(cutting_volumes)))
+        if deck_brep:
+            deck_brep = safe_boolean_difference(
+                deck_brep, cutting_volumes, info_messages)
 
 # ============================================================================
 # SECTION 8: BOUNDARY TRIM & OUTPUT
 # Always trim to boundary. Always show boundary curve.
 # ============================================================================
 
-# Boundary rectangle
 boundary_rect = rg.Rectangle3d(
     rg.Plane(rg.Point3d(0, 0, 0), rg.Vector3d.ZAxis),
-    rg.Interval(0, BOUNDARY_SIZE),
-    rg.Interval(0, BOUNDARY_SIZE))
+    rg.Interval(0, BOUNDARY),
+    rg.Interval(0, BOUNDARY))
 boundary_crv = boundary_rect.ToNurbsCurve()
 
-# Trimming box
 trim_box_brep = rg.Brep.CreateFromBox(rg.BoundingBox(
     rg.Point3d(0, 0, -1),
-    rg.Point3d(BOUNDARY_SIZE, BOUNDARY_SIZE, wall_height_max + 2.0)))
+    rg.Point3d(BOUNDARY, BOUNDARY, wall_height_max + 2.0)))
 
-# Trim walls
 walls = []
 for brep in wall_breps_pre_trim:
     trimmed = safe_boolean_intersection(brep, trim_box_brep, info_messages)
     if trimmed:
         walls.append(trimmed)
 
-# Trim arcs
 arcs = []
 for brep in arc_breps_pre_trim:
     trimmed = safe_boolean_intersection(brep, trim_box_brep, info_messages)
     if trimmed:
         arcs.append(trimmed)
 
-# Alias for output
 deck = deck_brep
 
-# Ground plane
 gp_m = 3.0
 ground_plane = rg.Brep.CreateFromCornerPoints(
     rg.Point3d(-gp_m, -gp_m, 0),
-    rg.Point3d(BOUNDARY_SIZE + gp_m, -gp_m, 0),
-    rg.Point3d(BOUNDARY_SIZE + gp_m, BOUNDARY_SIZE + gp_m, 0),
-    rg.Point3d(-gp_m, BOUNDARY_SIZE + gp_m, 0), 0.001)
+    rg.Point3d(BOUNDARY + gp_m, -gp_m, 0),
+    rg.Point3d(BOUNDARY + gp_m, BOUNDARY + gp_m, 0),
+    rg.Point3d(-gp_m, BOUNDARY + gp_m, 0), 0.001)
 
 # Summary
 info_messages.append("--- Pavilion Generator (Simple) ---")
 info_messages.append("Boundary: 50' x 50'")
-info_messages.append("Grid: {:.1f} x {:.1f} spacing, 15 deg rotation".format(
-    grid_spacing_x, grid_spacing_y))
-info_messages.append("Seeds: wall={}, height={}, arc={}, aperture={}".format(
-    seed, wall_height_seed, arc_seed, aperture_seed))
+info_messages.append("Circles: {}, tangent lines: {}".format(
+    len(circle_data), len(all_tangent_segs)))
 info_messages.append("Final: {} walls, {} arcs".format(len(walls), len(arcs)))
+info_messages.append("Seeds: circle={}, wall={}, height={}, arc={}, aperture={}".format(
+    circle_seed, seed, wall_height_seed, arc_seed, aperture_seed))
 
 info = "\n".join(info_messages)
