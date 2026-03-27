@@ -158,32 +158,29 @@ def perp_offset_pts(pt_a, pt_b, thickness):
 
 def external_tangent_lines(c1_x, c1_y, c1_r, c2_x, c2_y, c2_r):
     """Compute external tangent line segments between two circles.
-    Returns a list of (Point3d, Point3d) tuples — 0, 1, or 2 tangent lines."""
+    Returns a list of (Point3d, Point3d) tuples — 0, 1, or 2 tangent lines.
+    External tangents touch both circles on the same side."""
     dx = c2_x - c1_x
     dy = c2_y - c1_y
     dist = math.sqrt(dx * dx + dy * dy)
     if dist < 0.001:
         return []
-    # External tangents exist when circles don't fully overlap
     r_diff = abs(c1_r - c2_r)
     if dist <= r_diff:
         return []
 
-    # Angle between centers
     angle = math.atan2(dy, dx)
-
-    # Angle offset for external tangent
     cos_val = (c1_r - c2_r) / dist
     cos_val = max(-1.0, min(1.0, cos_val))
     alpha = math.acos(cos_val)
 
     tangents = []
     for sign in [1, -1]:
-        a = angle + sign * alpha + math.pi / 2.0
-        # Tangent point on circle 1
+        # Normal direction to tangent line
+        a = angle + sign * alpha
+        # Tangent points: both circles offset in the same normal direction
         t1_x = c1_x + c1_r * math.cos(a)
         t1_y = c1_y + c1_r * math.sin(a)
-        # Tangent point on circle 2
         t2_x = c2_x + c2_r * math.cos(a)
         t2_y = c2_y + c2_r * math.sin(a)
         tangents.append((rg.Point3d(t1_x, t1_y, 0), rg.Point3d(t2_x, t2_y, 0)))
@@ -193,7 +190,8 @@ def external_tangent_lines(c1_x, c1_y, c1_r, c2_x, c2_y, c2_r):
 
 def internal_tangent_lines(c1_x, c1_y, c1_r, c2_x, c2_y, c2_r):
     """Compute internal (cross) tangent line segments between two circles.
-    Returns a list of (Point3d, Point3d) tuples — 0, 1, or 2 tangent lines."""
+    Returns a list of (Point3d, Point3d) tuples — 0, 1, or 2 tangent lines.
+    Internal tangents cross between the circles."""
     dx = c2_x - c1_x
     dy = c2_y - c1_y
     dist = math.sqrt(dx * dx + dy * dy)
@@ -204,18 +202,20 @@ def internal_tangent_lines(c1_x, c1_y, c1_r, c2_x, c2_y, c2_r):
         return []
 
     angle = math.atan2(dy, dx)
-    cos_val = r_sum / dist
+    cos_val = (c1_r + c2_r) / dist
     cos_val = max(-1.0, min(1.0, cos_val))
     alpha = math.acos(cos_val)
 
     tangents = []
     for sign in [1, -1]:
-        a1 = angle + sign * alpha + math.pi / 2.0
-        a2 = angle + math.pi - sign * alpha + math.pi / 2.0
-        t1_x = c1_x + c1_r * math.cos(a1)
-        t1_y = c1_y + c1_r * math.sin(a1)
-        t2_x = c2_x + c2_r * math.cos(a2)
-        t2_y = c2_y + c2_r * math.sin(a2)
+        # Normal direction to tangent line
+        a = angle + sign * alpha
+        # Circle 1: offset in normal direction
+        t1_x = c1_x + c1_r * math.cos(a)
+        t1_y = c1_y + c1_r * math.sin(a)
+        # Circle 2: offset in OPPOSITE direction (internal tangent)
+        t2_x = c2_x - c2_r * math.cos(a)
+        t2_y = c2_y - c2_r * math.sin(a)
         tangents.append((rg.Point3d(t1_x, t1_y, 0), rg.Point3d(t2_x, t2_y, 0)))
 
     return tangents
