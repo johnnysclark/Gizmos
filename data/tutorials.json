@@ -1,0 +1,309 @@
+{
+  "categories": [
+    { "id": "rhino", "label": "Rhino", "color": "#E85D3A" },
+    { "id": "grasshopper", "label": "Grasshopper", "color": "#2ECC71" },
+    { "id": "python", "label": "Python", "color": "#3572A5" },
+    { "id": "fabrication", "label": "Fabrication", "color": "#F39C12" }
+  ],
+
+  "tutorials": [
+    {
+      "id": "rhino-basics",
+      "title": "Rhino Basics",
+      "description": "Introduction to the Rhino 3D modeling interface, viewport navigation, and core tools.",
+      "category": "rhino",
+      "difficulty": "beginner",
+      "estimatedMinutes": 30,
+      "position": { "x": 0, "y": 0 },
+      "steps": [
+        {
+          "title": "The Rhino Interface",
+          "type": "markdown",
+          "content": "## Getting Started with Rhino\n\nWhen you first open Rhino, you'll see four viewports: **Top**, **Front**, **Right**, and **Perspective**.\n\n### Key Interface Elements\n\n- **Command Line** — At the top. Type commands here or use the menus.\n- **Toolbars** — On the left and top. Commonly used tools for drawing, transforming, and analyzing geometry.\n- **Properties Panel** — On the right. Shows details about selected objects.\n- **Layer Panel** — Manage your drawing layers, colors, and visibility.\n\n### Your First Steps\n\n1. Open Rhino and select the **Small Objects — Millimeters** template\n2. Try rotating the Perspective viewport by right-click dragging\n3. Use the scroll wheel to zoom in and out\n4. Middle-click drag to pan"
+        },
+        {
+          "title": "Viewport Navigation",
+          "type": "markdown",
+          "content": "## Navigating the Viewports\n\nRhino uses four standard viewports by default. Each shows a different projection of your 3D model.\n\n### Navigation Controls\n\n| Action | Mouse Control |\n|--------|---------------|\n| Orbit (Perspective) | Right-click + drag |\n| Pan | Shift + Right-click + drag |\n| Zoom | Scroll wheel |\n| Zoom Extents | Double-click middle button |\n\n### Viewport Types\n\n- **Parallel projections** (Top, Front, Right) — No perspective distortion. Good for precise modeling.\n- **Perspective projection** — Shows depth. Good for visualization.\n\n### Tips\n\n- Press `F6` to toggle the ground plane\n- Use `Ctrl+Shift+E` to zoom extents in all viewports\n- Double-click a viewport title to maximize it"
+        },
+        {
+          "title": "Drawing Basic Shapes",
+          "type": "markdown",
+          "content": "## Creating Geometry\n\nRhino offers many tools for creating 2D and 3D geometry. Start with the basics:\n\n### 2D Shapes\n\n- **Line** — Click two points to draw a line segment\n- **Polyline** — Click multiple points to draw connected line segments\n- **Circle** — Specify center and radius\n- **Rectangle** — Click two opposite corners\n\n### 3D Primitives\n\n- **Box** — Create a rectangular box\n- **Sphere** — Specify center and radius\n- **Cylinder** — Base circle + height\n\n### Object Snaps (Osnaps)\n\nEnable Osnaps at the bottom toolbar to snap precisely to:\n- **End** — endpoints of curves\n- **Mid** — midpoints\n- **Int** — intersections\n- **Cen** — centers of circles/arcs"
+        }
+      ]
+    },
+    {
+      "id": "rhino-curves",
+      "title": "Curves & Surfaces",
+      "description": "Learn to draw and edit NURBS curves, and understand the foundation of surface modeling.",
+      "category": "rhino",
+      "difficulty": "beginner",
+      "estimatedMinutes": 45,
+      "position": { "x": 200, "y": -50 },
+      "steps": [
+        {
+          "title": "Understanding NURBS Curves",
+          "type": "markdown",
+          "content": "## NURBS Curves\n\nNURBS (Non-Uniform Rational B-Splines) are the mathematical representation Rhino uses for all geometry.\n\n### Key Concepts\n\n- **Control Points** — Points that influence the shape of the curve. The curve is attracted toward them but doesn't necessarily pass through them.\n- **Degree** — Determines curve smoothness. Degree 1 = straight lines, Degree 3 = smooth curves.\n- **Knots** — Internal parameters that affect how control points influence the curve.\n\n### Drawing Curves\n\n1. **InterpCrv** — Interpolated curve: passes through the points you click\n2. **Curve** — Control point curve: points influence the shape\n3. **Arc** — Circular arc through specified points\n\nTry both `InterpCrv` and `Curve` to feel the difference."
+        },
+        {
+          "title": "Editing Curves",
+          "type": "markdown",
+          "content": "## Editing Curves\n\n### Turning on Control Points\n\nSelect a curve and press `F10` to show its control points. Press `F11` to hide them.\n\n### Editing Operations\n\n- **Move control points** — Click and drag individual points\n- **Trim** — Cut a curve at intersection with another object\n- **Split** — Divide a curve at a point\n- **Join** — Combine end-to-end curves into a polycurve\n- **Rebuild** — Redefine a curve with a new number of control points\n- **Offset** — Create a parallel copy at a specified distance\n\n### Best Practices\n\n- Use fewer control points for smoother curves\n- Check curve continuity with `GCon` command\n- Use `CurvatureGraph` to visualize smoothness"
+        }
+      ]
+    },
+    {
+      "id": "rhino-surfaces",
+      "title": "Surface Modeling",
+      "description": "Create and manipulate NURBS surfaces using lofts, sweeps, and other surfacing techniques.",
+      "category": "rhino",
+      "difficulty": "intermediate",
+      "estimatedMinutes": 60,
+      "position": { "x": 400, "y": -100 },
+      "steps": [
+        {
+          "title": "Surface Creation Methods",
+          "type": "markdown",
+          "content": "## Creating Surfaces\n\nSurfaces in Rhino are created from curves. The main methods are:\n\n### From Curves\n\n- **Loft** — Creates a surface between two or more profile curves\n- **Sweep1** — Sweeps a profile curve along one rail curve\n- **Sweep2** — Sweeps a profile between two rail curves\n- **NetworkSrf** — Creates a surface from a network of intersecting curves\n- **Patch** — Fits a surface through a set of curves and points\n\n### From Primitives\n\n- **PlanarSrf** — Creates a flat surface from a closed planar curve\n- **ExtrudeCrv** — Extrudes a curve in a direction to create a surface\n- **Revolve** — Revolves a profile curve around an axis\n\n### Tips\n\n- Loft works best with curves that have the same number of control points\n- Sweep1 is great for creating moldings and extrusions along a path"
+        },
+        {
+          "title": "Editing Surfaces",
+          "type": "markdown",
+          "content": "## Surface Editing\n\n### Control Point Editing\n\nJust like curves, surfaces have control points you can manipulate:\n\n1. Select the surface\n2. Press `F10` to turn on control points\n3. Select and move individual points or rows of points\n\n### Surface Operations\n\n- **Trim** — Cut a surface using curves or other surfaces\n- **Split** — Divide a surface without removing parts\n- **Fillet** — Create rounded edges between surfaces\n- **Blend** — Create smooth transitions between surface edges\n- **Boolean operations** — Union, Difference, Intersection of closed solids\n\n### Analyzing Surfaces\n\n- **Zebra analysis** — Check surface continuity\n- **Curvature analysis** — Visualize surface curvature\n- **Draft angle** — Check moldability"
+        }
+      ]
+    },
+    {
+      "id": "rhino-solids",
+      "title": "Solid Modeling",
+      "description": "Work with closed polysurfaces and boolean operations to create complex solid geometry.",
+      "category": "rhino",
+      "difficulty": "intermediate",
+      "estimatedMinutes": 45,
+      "position": { "x": 600, "y": -50 },
+      "steps": [
+        {
+          "title": "Solids in Rhino",
+          "type": "markdown",
+          "content": "## Solid Modeling\n\nIn Rhino, a **solid** is simply a closed polysurface — all edges are joined with no gaps.\n\n### Creating Solids\n\n- **Box, Sphere, Cylinder** — Built-in solid primitives\n- **ExtrudeCrv** with `Cap=Yes` — Extrude a closed curve into a solid\n- **Join** — Join individual surfaces into a closed polysurface\n- **Cap** — Close open ends of a polysurface\n\n### Boolean Operations\n\n- **BooleanUnion** — Combine two solids into one\n- **BooleanDifference** — Subtract one solid from another\n- **BooleanIntersection** — Keep only the overlapping volume\n\n### Checking Solidity\n\nUse `ShowEdges` > `Naked Edges` to find gaps in your polysurface. All edges must be joined for a valid solid."
+        }
+      ]
+    },
+    {
+      "id": "grasshopper-intro",
+      "title": "Intro to Grasshopper",
+      "description": "Get started with Grasshopper's visual programming interface for parametric design.",
+      "category": "grasshopper",
+      "difficulty": "beginner",
+      "estimatedMinutes": 40,
+      "position": { "x": 350, "y": 150 },
+      "steps": [
+        {
+          "title": "What is Grasshopper?",
+          "type": "markdown",
+          "content": "## Grasshopper: Visual Programming for Design\n\nGrasshopper is a visual programming environment that runs inside Rhino. Instead of writing code, you connect **components** (nodes) with **wires** to build algorithms.\n\n### Why Grasshopper?\n\n- **Parametric design** — Change an input and the entire design updates\n- **Repetitive tasks** — Automate patterns, arrays, and transformations\n- **Exploration** — Quickly test design variations\n- **Data-driven design** — Import data to drive geometry\n\n### Opening Grasshopper\n\nIn Rhino, type `Grasshopper` in the command line or click the Grasshopper icon.\n\n### The Canvas\n\n- **Components** live on the canvas. Drag them from the toolbar tabs.\n- **Wires** connect outputs (right side) to inputs (left side)\n- Data flows **left to right**"
+        },
+        {
+          "title": "Your First Definition",
+          "type": "markdown",
+          "content": "## Building a Simple Definition\n\nLet's create a parametric circle grid:\n\n### Steps\n\n1. Place a **Number Slider** (Params > Input > Number Slider)\n2. Place a **Series** component (Sets > Sequence > Series)\n3. Connect the slider to the Series **Count** input\n4. Place a **Point** component (use Construct Point)\n5. Connect the Series output to the **X** input\n6. Place a **Circle** component (Curve > Primitive > Circle CNR)\n7. Connect the points to the Circle **Center** input\n\nNow move the slider — the number of circles changes!\n\n### Key Concepts\n\n- **Green** components = all inputs connected, geometry generated\n- **Orange** components = missing inputs or warnings\n- **Red** components = errors"
+        }
+      ]
+    },
+    {
+      "id": "grasshopper-data",
+      "title": "Data Trees",
+      "description": "Understand Grasshopper's data tree structure — the key to mastering complex definitions.",
+      "category": "grasshopper",
+      "difficulty": "intermediate",
+      "estimatedMinutes": 50,
+      "position": { "x": 550, "y": 200 },
+      "steps": [
+        {
+          "title": "Understanding Data Trees",
+          "type": "markdown",
+          "content": "## Data Trees\n\nGrasshopper organizes data in **trees** — hierarchical structures with branches and items.\n\n### Tree Anatomy\n\n- **Path** — The address of a branch, e.g. `{0;1;2}`\n- **Branch** — A list of items at a given path\n- **Item** — A single piece of data (number, point, curve, etc.)\n\n### Why Trees?\n\nWhen you perform an operation on a grid of points, the result naturally organizes into rows (branches) of points (items).\n\n### Visualizing Trees\n\n- **Param Viewer** — Shows the tree structure as text\n- **Panel** — Displays all data with path labels\n- Right-click a wire and select **Draw Fancy Wires** to see data flow\n\n### Common Operations\n\n- **Flatten** — Collapse all branches into one list\n- **Graft** — Put each item in its own branch\n- **Simplify** — Remove unnecessary path levels"
+        }
+      ]
+    },
+    {
+      "id": "grasshopper-components",
+      "title": "Essential Components",
+      "description": "A tour of the most useful Grasshopper components for architectural modeling.",
+      "category": "grasshopper",
+      "difficulty": "intermediate",
+      "estimatedMinutes": 55,
+      "position": { "x": 550, "y": 100 },
+      "steps": [
+        {
+          "title": "Geometry Components",
+          "type": "markdown",
+          "content": "## Key Components for Architecture\n\n### Curves\n- **Polyline** — Connect points into a polyline\n- **Interpolate** — Smooth curve through points\n- **Offset Curve** — Offset in a plane\n\n### Surfaces\n- **Loft** — Surface between curves\n- **Extrude** — Push a curve along a vector\n- **Boundary Surface** — Fill a closed curve\n\n### Transformations\n- **Move** — Translate geometry by a vector\n- **Rotate** — Rotate around an axis\n- **Scale** — Uniform or non-uniform scaling\n- **Mirror** — Reflect across a plane\n- **Orient** — Map from one plane to another\n\n### Lists\n- **List Item** — Get item by index\n- **Dispatch** — Split a list by a pattern\n- **Cull Pattern** — Remove items by a boolean pattern"
+        }
+      ]
+    },
+    {
+      "id": "grasshopper-scripting",
+      "title": "GH Scripting",
+      "description": "Write custom C# and Python scripts inside Grasshopper components.",
+      "category": "grasshopper",
+      "difficulty": "advanced",
+      "estimatedMinutes": 60,
+      "position": { "x": 750, "y": 150 },
+      "steps": [
+        {
+          "title": "Scripting in Grasshopper",
+          "type": "markdown",
+          "content": "## Custom Scripts in Grasshopper\n\nWhen built-in components aren't enough, you can write custom logic.\n\n### C# Script Component\n\n1. Place a **C# Script** component (Maths > Script > C# Script)\n2. Double-click to open the editor\n3. Define inputs/outputs by right-clicking the component\n4. Write your logic in the `RunScript` method\n\n### Python Script Component\n\n1. Place a **GhPython** component (Maths > Script > GhPython)\n2. Double-click to open the editor\n3. Use `rhinoscriptsyntax` or `RhinoCommon` libraries\n\n### When to Script?\n\n- Complex math or logic that's hard to wire visually\n- Text processing and file I/O\n- Custom data structures\n- Interfacing with external APIs or libraries"
+        }
+      ]
+    },
+    {
+      "id": "python-basics",
+      "title": "Python Basics",
+      "description": "Learn Python fundamentals: variables, loops, functions, and data structures.",
+      "category": "python",
+      "difficulty": "beginner",
+      "estimatedMinutes": 45,
+      "position": { "x": 150, "y": 300 },
+      "steps": [
+        {
+          "title": "Python Fundamentals",
+          "type": "markdown",
+          "content": "## Python for Designers\n\nPython is a versatile programming language that's easy to learn and widely used in design computation.\n\n### Variables and Types\n\n```python\nname = \"Architecture\"    # string\nfloors = 12              # integer\nheight = 3.5             # float\nis_tall = True           # boolean\n```\n\n### Lists\n\n```python\npoints = [0, 1, 2, 3, 4]\nmixed = [\"hello\", 42, True]\n```\n\n### Loops\n\n```python\nfor i in range(10):\n    print(i)\n\nfor point in points:\n    print(point)\n```\n\n### Functions\n\n```python\ndef calculate_area(width, height):\n    return width * height\n\narea = calculate_area(5, 10)  # 50\n```"
+        },
+        {
+          "title": "Data Structures",
+          "type": "markdown",
+          "content": "## Working with Data\n\n### Dictionaries\n\n```python\nbuilding = {\n    \"name\": \"Tower A\",\n    \"floors\": 20,\n    \"height\": 80.0\n}\n\nprint(building[\"name\"])  # Tower A\n```\n\n### List Comprehensions\n\n```python\n# Create a list of squares\nsquares = [x**2 for x in range(10)]\n\n# Filter even numbers\nevens = [x for x in range(20) if x % 2 == 0]\n```\n\n### File I/O\n\n```python\n# Read a CSV\nimport csv\nwith open('data.csv') as f:\n    reader = csv.reader(f)\n    for row in reader:\n        print(row)\n```"
+        }
+      ]
+    },
+    {
+      "id": "python-rhino",
+      "title": "Python in Rhino",
+      "description": "Use RhinoScriptSyntax and RhinoCommon to automate Rhino with Python scripts.",
+      "category": "python",
+      "difficulty": "intermediate",
+      "estimatedMinutes": 50,
+      "position": { "x": 350, "y": 350 },
+      "steps": [
+        {
+          "title": "RhinoScriptSyntax",
+          "type": "markdown",
+          "content": "## Python Scripting in Rhino\n\nRhino includes a built-in Python editor. Open it with `EditPythonScript`.\n\n### RhinoScriptSyntax\n\nThe `rhinoscriptsyntax` library provides simple functions for common operations:\n\n```python\nimport rhinoscriptsyntax as rs\n\n# Draw a point\nrs.AddPoint(0, 0, 0)\n\n# Draw a line\nrs.AddLine([0,0,0], [10,0,0])\n\n# Draw a circle\nrs.AddCircle([0,0,0], 5)\n\n# Get user input\npt = rs.GetPoint(\"Pick a point\")\nif pt:\n    rs.AddSphere(pt, 2)\n```\n\n### Automating Tasks\n\n```python\nimport rhinoscriptsyntax as rs\n\n# Create a grid of spheres\nfor x in range(5):\n    for y in range(5):\n        rs.AddSphere([x*3, y*3, 0], 1)\n```"
+        }
+      ]
+    },
+    {
+      "id": "python-grasshopper",
+      "title": "Python in Grasshopper",
+      "description": "Use the GhPython component to write Python scripts that integrate with Grasshopper data flows.",
+      "category": "python",
+      "difficulty": "advanced",
+      "estimatedMinutes": 55,
+      "position": { "x": 550, "y": 300 },
+      "steps": [
+        {
+          "title": "GhPython Component",
+          "type": "markdown",
+          "content": "## Python in Grasshopper\n\nThe GhPython component lets you write Python inside Grasshopper definitions.\n\n### Setup\n\n1. Place a **GhPython** component on the canvas\n2. Right-click the inputs to rename and set type hints\n3. Double-click to open the code editor\n\n### Example: Custom Point Grid\n\n```python\nimport Rhino.Geometry as rg\n\npoints = []\nfor i in range(count_x):\n    for j in range(count_y):\n        pt = rg.Point3d(i * spacing, j * spacing, 0)\n        points.append(pt)\n\na = points  # 'a' is the output\n```\n\n### Working with Data Trees\n\n```python\nfrom Grasshopper import DataTree\nfrom Grasshopper.Kernel.Data import GH_Path\n\ntree = DataTree[object]()\nfor i in range(rows):\n    path = GH_Path(i)\n    for j in range(cols):\n        tree.Add(rg.Point3d(i, j, 0), path)\n\na = tree\n```"
+        }
+      ]
+    },
+    {
+      "id": "fab-laser",
+      "title": "Laser Cutting",
+      "description": "Prepare files for laser cutting: line weights, kerf compensation, and material settings.",
+      "category": "fabrication",
+      "difficulty": "beginner",
+      "estimatedMinutes": 35,
+      "position": { "x": 0, "y": -200 },
+      "steps": [
+        {
+          "title": "Preparing Laser Cut Files",
+          "type": "markdown",
+          "content": "## Laser Cutting Basics\n\n### File Preparation\n\nLaser cutters read vector files. Prepare your geometry in Rhino:\n\n1. **All curves must be planar** (flat on the XY plane)\n2. **Use layers for cut types:**\n   - Red = cut through\n   - Blue = score/etch\n   - Black = raster engrave\n3. **Line weights matter** — Hairline for cuts, thicker for engraving\n4. **Export as DXF or AI** format\n\n### Kerf Compensation\n\nThe laser beam has width (~0.1-0.3mm). For tight-fitting joints:\n- Offset **cut lines inward** by half the kerf width\n- Test with a small sample first\n\n### Material Settings\n\nEvery material needs specific **speed** and **power** settings:\n- Cardboard: High speed, low power\n- Acrylic: Medium speed, high power\n- Plywood: Low speed, high power\n\nAlways run a test cut on scrap material first."
+        }
+      ]
+    },
+    {
+      "id": "fab-3dprint",
+      "title": "3D Printing",
+      "description": "Export meshes for 3D printing, understand supports, and optimize print quality.",
+      "category": "fabrication",
+      "difficulty": "beginner",
+      "estimatedMinutes": 40,
+      "position": { "x": -200, "y": -150 },
+      "steps": [
+        {
+          "title": "3D Printing from Rhino",
+          "type": "markdown",
+          "content": "## Preparing Models for 3D Printing\n\n### Requirements\n\n- Model must be a **closed solid** (watertight mesh)\n- Use `ShowEdges > Naked Edges` to check for gaps\n- Minimum wall thickness depends on material (typically 1-2mm)\n\n### Export Workflow\n\n1. **Check** your model is a valid solid\n2. **Mesh** — Use `Mesh` command with custom settings for desired resolution\n3. **Export as STL** — File > Export Selected > STL\n4. **Open in slicer** (Cura, PrusaSlicer, etc.)\n\n### Key Slicer Settings\n\n- **Layer height** — 0.1mm (fine) to 0.3mm (fast)\n- **Infill** — 15-20% for most architectural models\n- **Supports** — Enable for overhangs > 45 degrees\n- **Brim/raft** — Improves bed adhesion for small contact areas\n\n### Tips\n\n- Orient the model to minimize supports\n- Scale matters — check units before exporting\n- Hollow large models to save material and time"
+        }
+      ]
+    },
+    {
+      "id": "fab-cnc",
+      "title": "CNC Milling",
+      "description": "Prepare 2D and 3D toolpaths for CNC routing, including feeds, speeds, and material setup.",
+      "category": "fabrication",
+      "difficulty": "advanced",
+      "estimatedMinutes": 60,
+      "position": { "x": -100, "y": -300 },
+      "steps": [
+        {
+          "title": "CNC Basics",
+          "type": "markdown",
+          "content": "## CNC Milling for Architecture\n\n### What is CNC?\n\nCNC (Computer Numerical Control) routers use rotating bits to cut material. Unlike laser cutting, CNC can create 3D topography.\n\n### Types of Operations\n\n- **2D Profiling** — Cut outlines through sheet material\n- **2D Pocketing** — Carve recessed areas to a set depth\n- **3D Surfacing** — Mill complex 3D surfaces with ball-end bits\n\n### File Preparation\n\n1. Model your geometry in Rhino at **full scale**\n2. Organize layers: cut profiles, pockets, 3D surfaces\n3. Export to CAM software (RhinoCAM, Fusion 360, Mastercam)\n\n### Key Parameters\n\n- **Bit diameter** — Determines minimum feature size and corner radius\n- **Feed rate** — How fast the bit moves (material dependent)\n- **Spindle speed** — RPM of the cutting bit\n- **Step-down** — Depth per pass (never cut full depth in one pass)\n- **Step-over** — Distance between parallel toolpath passes"
+        }
+      ]
+    }
+  ],
+
+  "edges": [
+    { "source": "rhino-basics", "target": "rhino-curves" },
+    { "source": "rhino-curves", "target": "rhino-surfaces" },
+    { "source": "rhino-surfaces", "target": "rhino-solids" },
+    { "source": "rhino-basics", "target": "grasshopper-intro" },
+    { "source": "grasshopper-intro", "target": "grasshopper-data" },
+    { "source": "grasshopper-intro", "target": "grasshopper-components" },
+    { "source": "grasshopper-data", "target": "grasshopper-scripting" },
+    { "source": "grasshopper-components", "target": "grasshopper-scripting" },
+    { "source": "python-basics", "target": "python-rhino" },
+    { "source": "python-rhino", "target": "python-grasshopper" },
+    { "source": "python-basics", "target": "grasshopper-scripting" },
+    { "source": "grasshopper-scripting", "target": "python-grasshopper" },
+    { "source": "rhino-basics", "target": "fab-laser" },
+    { "source": "rhino-solids", "target": "fab-3dprint" },
+    { "source": "fab-laser", "target": "fab-cnc" },
+    { "source": "fab-3dprint", "target": "fab-cnc" },
+    { "source": "rhino-basics", "target": "fab-3dprint" }
+  ],
+
+  "trails": [
+    {
+      "id": "rhino-to-grasshopper",
+      "title": "Rhino to Grasshopper",
+      "description": "A guided path from Rhino fundamentals to parametric design with Grasshopper.",
+      "color": "#E85D3A",
+      "tutorials": ["rhino-basics", "rhino-curves", "rhino-surfaces", "grasshopper-intro", "grasshopper-components", "grasshopper-data"]
+    },
+    {
+      "id": "computational-design",
+      "title": "Computational Design",
+      "description": "Learn to code for design — from Python basics to scripting in Grasshopper.",
+      "color": "#3572A5",
+      "tutorials": ["python-basics", "python-rhino", "grasshopper-intro", "grasshopper-scripting", "python-grasshopper"]
+    },
+    {
+      "id": "digital-fabrication",
+      "title": "Digital Fabrication",
+      "description": "From screen to shop — prepare your designs for laser cutting, 3D printing, and CNC.",
+      "color": "#F39C12",
+      "tutorials": ["rhino-basics", "rhino-solids", "fab-laser", "fab-3dprint", "fab-cnc"]
+    }
+  ]
+}
