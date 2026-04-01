@@ -373,7 +373,7 @@ function renderDotsGrid(ctx, size, s) {
 }
 
 function renderDotsStagger(ctx, size, s) {
-  // Even row count ensures top and bottom rows have the same x-offset → seamless in Y
+  // Even row count: row 0 and row n share the same x-offset (both even) → seamless in Y.
   const n = elCountEven(s);
   const sp = size / n;
   const r = sp * 0.5 * sf(s);
@@ -382,14 +382,19 @@ function renderDotsStagger(ctx, size, s) {
   ctx.fillStyle = s.fg;
 
   for (let row = 0; row < n; row++) {
-    const xOff = (row % 2) * sp * 0.5;      // alternate rows offset by half cell
+    const xOff = (row % 2) * sp * 0.5;
+    const y = row * sp + sp / 2;
     for (let col = 0; col < n; col++) {
-      // Wrap x so the offset column also tiles seamlessly
-      const x = (col * sp + xOff) % size;
-      const y = row * sp + sp / 2;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
+      const xBase = col * sp + xOff;
+      // Draw at -size, 0, +size offsets: canvas clips the out-of-bounds portions,
+      // so any dot whose center is at x=0 or x=size gets both halves drawn correctly.
+      for (let t = -1; t <= 1; t++) {
+        const x = xBase + t * size;
+        if (x + r <= 0 || x - r >= size) continue; // fully outside — skip
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 }
@@ -422,9 +427,6 @@ function renderLinesV(ctx, size, s) {
 }
 
 function renderLinesDiag(ctx, size, s) {
-  // Diagonal at 45°. Spacing = size/n along the diagonal direction.
-  // Line i passes through (i*sp, 0) with direction (1,1).
-  // Tiling: shift by (size,0) maps line i to line i+n → seamless.
   const n = elCount(s);
   const sp = size / n;
   const lw = Math.max(1, sp * sf(s));
@@ -432,13 +434,14 @@ function renderLinesDiag(ctx, size, s) {
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.strokeStyle = s.fg;
   ctx.lineWidth = lw;
-  ctx.lineCap = 'square';
-  // Draw enough lines to cover the canvas (range -n to 2n covers all cases)
-  for (let i = -n; i <= 2 * n; i++) {
+  // 'butt' cap + endpoints extended far outside the canvas so no cap artifact
+  // appears within the tile at the top or bottom edge.
+  ctx.lineCap = 'butt';
+  for (let i = -1; i <= n + 1; i++) {
     const x0 = i * sp;
     ctx.beginPath();
-    ctx.moveTo(x0, 0);
-    ctx.lineTo(x0 + size, size);
+    ctx.moveTo(x0 - size, -size);    // well above/left of canvas
+    ctx.lineTo(x0 + 2 * size, 2 * size); // well below/right of canvas
     ctx.stroke();
   }
 }
