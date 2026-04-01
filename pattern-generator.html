@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pattern Generator</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #1a1a1a;
+  --panel: #242424;
+  --border: #333;
+  --text: #ccc;
+  --text-dim: #888;
+  --accent: #5a9;
+  --input-bg: #2a2a2a;
+  --sidebar-w: 260px;
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  display: flex;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar h1 {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 14px 14px 10px;
+  color: #eee;
+  letter-spacing: 0.5px;
+}
+
+.section-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  padding: 10px 14px 4px;
+}
+
+/* Pattern grid */
+.pattern-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 6px 14px;
+}
+
+.pattern-btn {
+  background: var(--input-bg);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 10px;
+  padding: 6px 4px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s;
+}
+
+.pattern-btn:hover { border-color: #555; }
+.pattern-btn.active { border-color: var(--accent); color: #fff; }
+
+/* Controls */
+.ctrl-group {
+  padding: 6px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ctrl-row label {
+  width: 70px;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.ctrl-row input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+  height: 14px;
+}
+
+.ctrl-row input[type="number"] {
+  width: 44px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 2px 4px;
+  text-align: right;
+}
+
+.ctrl-row input[type="number"]:focus {
+  outline: 1px solid var(--accent);
+  border-color: var(--accent);
+}
+
+.ctrl-row input[type="color"] {
+  width: 28px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px;
+  background: var(--input-bg);
+  cursor: pointer;
+}
+
+.ctrl-row input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+.size-toggles {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+}
+
+.size-btn {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 10px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.size-btn:hover { border-color: #555; }
+.size-btn.active { border-color: var(--accent); color: #fff; }
+
+/* Memphis color swatches */
+.memphis-colors {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.memphis-colors input[type="color"] {
+  width: 28px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px;
+  background: var(--input-bg);
+  cursor: pointer;
+}
+
+/* Download */
+.download-area {
+  margin-top: auto;
+  padding: 14px;
+}
+
+.download-btn {
+  width: 100%;
+  padding: 8px;
+  background: var(--accent);
+  color: #111;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+}
+
+.download-btn:hover { filter: brightness(1.1); }
+
+/* --- Preview --- */
+.preview-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Transparency checkerboard */
+.preview-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(-45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2a2a2a 75%),
+    linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  z-index: 0;
+}
+
+.preview {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  background-position: 0 0;
+  image-rendering: pixelated;
+  z-index: 1;
+}
+
+/* Scrollbar */
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+/* Remove number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type="number"] { -moz-appearance: textfield; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>Pattern Generator</h1>
+
+  <div class="section-label">Classic</div>
+  <div class="pattern-grid" id="classic-grid"></div>
+
+  <div class="section-label">Memphis</div>
+  <div class="pattern-grid" id="memphis-grid"></div>
+
+  <div class="section-label">Controls</div>
+  <div class="ctrl-group" id="controls"></div>
+
+  <div class="download-area">
+    <button class="download-btn" id="download-btn">Download PNG</button>
+  </div>
+</div>
+
+<div class="preview-wrap">
+  <div class="preview" id="preview"></div>
+</div>
+
+<script>
+// ============================================================
+// Seeded PRNG — mulberry32
+// ============================================================
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ============================================================
+// Pattern drawing functions
+// Each: draw(ctx, w, h, p) where p = merged params
+// ============================================================
+
+function drawGridDots(ctx, w, h, p) {
+  const spacing = Math.max(4, Math.round(w * (1 - p.density / 100) * 0.4 + 4));
+  const r = Math.max(0.5, p.strokeWeight * 0.8);
+  ctx.fillStyle = p.fg;
+  for (let oy = -1; oy <= 1; oy++) {
+    for (let ox = -1; ox <= 1; ox++) {
+      for (let y = 0; y < h; y += spacing) {
+        for (let x = 0; x < w; x += spacing) {
+          ctx.beginPath();
+          ctx.arc(x + ox * w, y + oy * h, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+  }
+}
+
+function drawStaggeredDots(ctx, w, h, p) {
+  const spacing = Math.max(4, Math.round(w * (1 - p.density / 100) * 0.4 + 4));
+  const r = Math.max(0.5, p.strokeWeight * 0.8);
+  ctx.fillStyle = p.fg;
+  let row = 0;
+  for (let oy = -1; oy <= 1; oy++) {
+    for (let ox = -1; ox <= 1; ox++) {
+      row = 0;
+      for (let y = 0; y < h; y += spacing) {
+        const offset = (row % 2) * (spacing / 2);
+        for (let x = 0; x < w; x += spacing) {
+          ctx.beginPath();
+          ctx.arc(x + offset + ox * w, y + oy * h, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        row++;
+      }
+    }
+  }
+}
+
+function drawHorizontalLines(ctx, w, h, p) {
+  const spacing = Math.max(3, Math.round(h * (1 - p.density / 100) * 0.4 + 3));
+  ctx.strokeStyle = p.fg;
+  ctx.lineWidth = p.strokeWeight;
+  for (let y = 0; y < h; y += spacing) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+}
+
+function drawVerticalLines(ctx, w, h, p) {
+  const spacing = Math.max(3, Math.round(w * (1 - p.density / 100) * 0.4 + 3));
+  ctx.strokeStyle = p.fg;
+  ctx.lineWidth = p.strokeWeight;
+  for (let x = 0; x < w; x += spacing) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+}
+
+function drawDiagonalLines(ctx, w, h, p) {
+  const spacing = Math.max(3, Math.round(w * (1 - p.density / 100) * 0.4 + 3));
+  ctx.strokeStyle = p.fg;
+  ctx.lineWidth = p.strokeWeight;
+  const len = w + h;
+  for (let i = -len; i < len; i += spacing) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i + h, h);
+    ctx.stroke();
+  }
+}
+
+function drawCrosshatch(ctx, w, h, p) {
+  drawHorizontalLines(ctx, w, h, p);
+  drawVerticalLines(ctx, w, h, p);
+}
+
+function drawCheckerboard(ctx, w, h, p) {
+  const cells = Math.max(2, Math.round(p.density / 100 * 14 + 2));
+  const cw = w / cells;
+  const ch = h / cells;
+  ctx.fillStyle = p.fg;
+  for (let row = 0; row < cells; row++) {
+    for (let col = 0; col < cells; col++) {
+      if ((row + col) % 2 === 0) {
+        ctx.fillRect(col * cw, row * ch, cw, ch);
+      }
+    }
+  }
+}
+
+function drawGrid(ctx, w, h, p) {
+  const spacing = Math.max(4, Math.round(w * (1 - p.density / 100) * 0.4 + 4));
+  ctx.strokeStyle = p.fg;
+  ctx.lineWidth = Math.max(0.25, p.strokeWeight * 0.5);
+  for (let x = 0; x < w; x += spacing) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  for (let y = 0; y < h; y += spacing) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+}
+
+// --- Memphis patterns ---
+
+function drawConfetti(ctx, w, h, p) {
+  const count = Math.round(p.density * 0.6 + 5);
+  const rng = mulberry32(42);
+  const colors = p.memphisColors;
+  const sw = p.strokeWeight;
+
+  for (let oy = -1; oy <= 1; oy++) {
+    for (let ox = -1; ox <= 1; ox++) {
+      for (let i = 0; i < count; i++) {
+        const x = rng() * w + ox * w;
+        const y = rng() * h + oy * h;
+        const shape = Math.floor(rng() * 3);
+        const size = 2 + rng() * sw * 2;
+        const angle = rng() * Math.PI * 2;
+        const color = colors[Math.floor(rng() * colors.length)];
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.fillStyle = color;
+
+        if (shape === 0) {
+          // triangle
+          ctx.beginPath();
+          ctx.moveTo(0, -size);
+          ctx.lineTo(size * 0.866, size * 0.5);
+          ctx.lineTo(-size * 0.866, size * 0.5);
+          ctx.closePath();
+          ctx.fill();
+        } else if (shape === 1) {
+          // circle
+          ctx.beginPath();
+          ctx.arc(0, 0, size * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // rectangle
+          ctx.fillRect(-size * 0.4, -size, size * 0.8, size * 2);
+        }
+        ctx.restore();
+      }
+    }
+  }
+}
+
+function drawSquiggles(ctx, w, h, p) {
+  const count = Math.round(p.density * 0.3 + 3);
+  const rng = mulberry32(77);
+  const colors = p.memphisColors;
+
+  ctx.lineWidth = p.strokeWeight;
+  ctx.lineCap = 'round';
+
+  for (let oy = -1; oy <= 1; oy++) {
+    for (let ox = -1; ox <= 1; ox++) {
+      for (let i = 0; i < count; i++) {
+        const sx = rng() * w + ox * w;
+        const sy = rng() * h + oy * h;
+        const len = 8 + rng() * 20;
+        const angle = rng() * Math.PI * 2;
+        const color = colors[Math.floor(rng() * colors.length)];
+
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+
+        let cx = sx, cy = sy;
+        const segs = 4 + Math.floor(rng() * 4);
+        for (let s = 0; s < segs; s++) {
+          const da = (rng() - 0.5) * 2;
+          cx += Math.cos(angle + da) * (len / segs);
+          cy += Math.sin(angle + da) * (len / segs);
+          ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function drawTerrazzo(ctx, w, h, p) {
+  const count = Math.round(p.density * 0.4 + 4);
+  const rng = mulberry32(123);
+  const colors = p.memphisColors;
+
+  for (let oy = -1; oy <= 1; oy++) {
+    for (let ox = -1; ox <= 1; ox++) {
+      for (let i = 0; i < count; i++) {
+        const cx = rng() * w + ox * w;
+        const cy = rng() * h + oy * h;
+        const color = colors[Math.floor(rng() * colors.length)];
+        const angle = rng() * Math.PI * 2;
+        const size = 3 + rng() * p.strokeWeight * 3;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        ctx.fillStyle = color;
+
+        // Irregular chip: a blob-ish polygon
+        ctx.beginPath();
+        const pts = 5 + Math.floor(rng() * 3);
+        for (let j = 0; j < pts; j++) {
+          const a = (j / pts) * Math.PI * 2;
+          const r = size * (0.5 + rng() * 0.5);
+          const px = Math.cos(a) * r;
+          const py = Math.sin(a) * r;
+          if (j === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+}
+
+// ============================================================
+// Pattern registry
+// ============================================================
+const PATTERNS = {
+  'grid-dots':       { name: 'Dots',        category: 'classic', draw: drawGridDots },
+  'staggered-dots':  { name: 'Staggered',   category: 'classic', draw: drawStaggeredDots },
+  'h-lines':         { name: 'H Lines',     category: 'classic', draw: drawHorizontalLines },
+  'v-lines':         { name: 'V Lines',     category: 'classic', draw: drawVerticalLines },
+  'diag-lines':      { name: 'Diagonal',    category: 'classic', draw: drawDiagonalLines },
+  'crosshatch':      { name: 'Crosshatch',  category: 'classic', draw: drawCrosshatch },
+  'checkerboard':    { name: 'Checker',     category: 'classic', draw: drawCheckerboard },
+  'grid':            { name: 'Grid',        category: 'classic', draw: drawGrid },
+  'confetti':        { name: 'Confetti',    category: 'memphis', draw: drawConfetti },
+  'squiggles':       { name: 'Squiggles',   category: 'memphis', draw: drawSquiggles },
+  'terrazzo':        { name: 'Terrazzo',    category: 'memphis', draw: drawTerrazzo },
+};
+
+// ============================================================
+// State
+// ============================================================
+let state = {
+  pattern: 'grid-dots',
+  tileSize: 64,
+  density: 50,
+  strokeWeight: 1.5,
+  fg: '#ffffff',
+  bg: '#1a1a1a',
+  transparentBg: false,
+  memphisColors: ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a855f7'],
+};
+
+// ============================================================
+// Canvas + rendering
+// ============================================================
+const offscreen = document.createElement('canvas');
+const offCtx = offscreen.getContext('2d');
+const preview = document.getElementById('preview');
+
+let dataURL = '';
+
+function render() {
+  const s = state.tileSize;
+  offscreen.width = s;
+  offscreen.height = s;
+
+  // Clear / fill background
+  offCtx.clearRect(0, 0, s, s);
+  if (!state.transparentBg) {
+    offCtx.fillStyle = state.bg;
+    offCtx.fillRect(0, 0, s, s);
+  }
+
+  // Clip to tile bounds
+  offCtx.save();
+  offCtx.beginPath();
+  offCtx.rect(0, 0, s, s);
+  offCtx.clip();
+
+  const pat = PATTERNS[state.pattern];
+  if (pat) {
+    pat.draw(offCtx, s, s, {
+      density: state.density,
+      strokeWeight: state.strokeWeight,
+      fg: state.fg,
+      bg: state.bg,
+      memphisColors: state.memphisColors,
+    });
+  }
+
+  offCtx.restore();
+
+  dataURL = offscreen.toDataURL('image/png');
+  preview.style.backgroundImage = `url(${dataURL})`;
+  preview.style.backgroundSize = `${s}px ${s}px`;
+}
+
+// ============================================================
+// UI construction
+// ============================================================
+
+// Pattern buttons
+function buildPatternButtons() {
+  const classicGrid = document.getElementById('classic-grid');
+  const memphisGrid = document.getElementById('memphis-grid');
+
+  for (const [id, pat] of Object.entries(PATTERNS)) {
+    const btn = document.createElement('button');
+    btn.className = 'pattern-btn' + (id === state.pattern ? ' active' : '');
+    btn.textContent = pat.name;
+    btn.dataset.id = id;
+    btn.addEventListener('click', () => {
+      state.pattern = id;
+      document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateControlVisibility();
+      render();
+    });
+    (pat.category === 'classic' ? classicGrid : memphisGrid).appendChild(btn);
+  }
+}
+
+function updateControlVisibility() {
+  const isMemphis = PATTERNS[state.pattern]?.category === 'memphis';
+  document.getElementById('fg-row').style.display = isMemphis ? 'none' : '';
+  document.getElementById('memphis-row').style.display = isMemphis ? '' : 'none';
+}
+
+// Controls
+function buildControls() {
+  const container = document.getElementById('controls');
+  container.innerHTML = '';
+
+  // Tile size
+  const sizeRow = mkRow('Size');
+  const sizes = [32, 64, 128, 256];
+  const toggleWrap = document.createElement('div');
+  toggleWrap.className = 'size-toggles';
+  sizes.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'size-btn' + (s === state.tileSize ? ' active' : '');
+    btn.textContent = s;
+    btn.addEventListener('click', () => {
+      state.tileSize = s;
+      toggleWrap.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    });
+    toggleWrap.appendChild(btn);
+  });
+  sizeRow.appendChild(toggleWrap);
+  container.appendChild(sizeRow);
+
+  // Density
+  container.appendChild(mkSlider('Density', 0, 100, state.density, 1, v => { state.density = v; render(); }));
+
+  // Stroke weight
+  container.appendChild(mkSlider('Weight', 0.5, 6, state.strokeWeight, 0.25, v => { state.strokeWeight = v; render(); }));
+
+  // FG color
+  const fgRow = mkRow('Foreground');
+  fgRow.id = 'fg-row';
+  const fgInput = document.createElement('input');
+  fgInput.type = 'color';
+  fgInput.value = state.fg;
+  fgInput.addEventListener('input', () => { state.fg = fgInput.value; render(); });
+  fgRow.appendChild(fgInput);
+  container.appendChild(fgRow);
+
+  // Memphis colors
+  const mRow = mkRow('Colors');
+  mRow.id = 'memphis-row';
+  const mWrap = document.createElement('div');
+  mWrap.className = 'memphis-colors';
+  state.memphisColors.forEach((c, i) => {
+    const inp = document.createElement('input');
+    inp.type = 'color';
+    inp.value = c;
+    inp.addEventListener('input', () => { state.memphisColors[i] = inp.value; render(); });
+    mWrap.appendChild(inp);
+  });
+  mRow.appendChild(mWrap);
+  container.appendChild(mRow);
+
+  // BG color
+  const bgRow = mkRow('Background');
+  const bgInput = document.createElement('input');
+  bgInput.type = 'color';
+  bgInput.value = state.bg;
+  bgInput.addEventListener('input', () => { state.bg = bgInput.value; render(); });
+  bgRow.appendChild(bgInput);
+
+  const transpLabel = document.createElement('label');
+  transpLabel.style.cssText = 'width:auto; display:flex; align-items:center; gap:3px; cursor:pointer;';
+  const transpCb = document.createElement('input');
+  transpCb.type = 'checkbox';
+  transpCb.checked = state.transparentBg;
+  transpCb.addEventListener('change', () => { state.transparentBg = transpCb.checked; render(); });
+  transpLabel.appendChild(transpCb);
+  transpLabel.append('None');
+  bgRow.appendChild(transpLabel);
+  container.appendChild(bgRow);
+
+  updateControlVisibility();
+}
+
+function mkRow(label) {
+  const row = document.createElement('div');
+  row.className = 'ctrl-row';
+  const lbl = document.createElement('label');
+  lbl.textContent = label;
+  row.appendChild(lbl);
+  return row;
+}
+
+function mkSlider(label, min, max, value, step, onChange) {
+  const row = mkRow(label);
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = min;
+  slider.max = max;
+  slider.step = step;
+  slider.value = value;
+
+  const num = document.createElement('input');
+  num.type = 'number';
+  num.min = min;
+  num.max = max;
+  num.step = step;
+  num.value = value;
+
+  slider.addEventListener('input', () => {
+    num.value = slider.value;
+    onChange(parseFloat(slider.value));
+  });
+
+  num.addEventListener('change', () => {
+    let v = parseFloat(num.value);
+    if (isNaN(v)) v = min;
+    v = Math.max(min, Math.min(max, v));
+    num.value = v;
+    slider.value = v;
+    onChange(v);
+  });
+
+  row.appendChild(slider);
+  row.appendChild(num);
+  return row;
+}
+
+// ============================================================
+// Download
+// ============================================================
+document.getElementById('download-btn').addEventListener('click', () => {
+  offscreen.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pattern-${state.pattern}-${state.tileSize}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+});
+
+// ============================================================
+// Init
+// ============================================================
+buildPatternButtons();
+buildControls();
+render();
+
+</script>
+</body>
+</html>
