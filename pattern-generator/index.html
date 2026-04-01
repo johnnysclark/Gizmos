@@ -189,9 +189,6 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; width: 16px
   flex: 1;
   position: relative;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 #preview::before {
   content: '';
@@ -207,9 +204,8 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; width: 16px
   background-color: #222;
 }
 #preview-canvas {
-  position: relative;
-  display: block;
-  image-rendering: pixelated;
+  position: absolute;
+  inset: 0;
 }
 </style>
 </head>
@@ -520,15 +516,16 @@ function updatePreview() {
 
   const preview = document.getElementById('preview');
   const pw = preview.clientWidth, ph = preview.clientHeight;
-  const scale = Math.min(pw / TEXTURE_SIZE, ph / TEXTURE_SIZE);
-  const drawW = Math.round(TEXTURE_SIZE * scale), drawH = Math.round(TEXTURE_SIZE * scale);
-  previewCvs.width = drawW;
-  previewCvs.height = drawH;
-  previewCvs.style.width = drawW + 'px';
-  previewCvs.style.height = drawH + 'px';
+  previewCvs.width = pw;
+  previewCvs.height = ph;
+  previewCvs.style.width = pw + 'px';
+  previewCvs.style.height = ph + 'px';
+
   const pCtx = previewCvs.getContext('2d');
-  pCtx.clearRect(0, 0, drawW, drawH);
-  pCtx.drawImage(textureCvs, 0, 0, drawW, drawH);
+  pCtx.clearRect(0, 0, pw, ph);
+  const pat = pCtx.createPattern(textureCvs, 'repeat');
+  pCtx.fillStyle = pat;
+  pCtx.fillRect(0, 0, pw, ph);
 }
 
 // ── UI Wiring ──
