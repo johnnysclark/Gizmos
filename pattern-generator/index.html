@@ -82,32 +82,6 @@ select {
 }
 select:focus { outline: none; border-color: var(--accent); }
 
-/* Tile size toggles */
-.tile-toggles {
-  display: flex;
-  gap: 4px;
-}
-.tile-toggle {
-  flex: 1;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  font-family: var(--font);
-  font-size: 11px;
-  padding: 4px 2px;
-  text-align: center;
-  cursor: pointer;
-  border-radius: 3px;
-  user-select: none;
-  transition: background 0.1s, color 0.1s;
-}
-.tile-toggle:hover { color: var(--text); }
-.tile-toggle.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
 /* Sliders */
 .slider-row {
   display: flex;
@@ -193,9 +167,14 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
   background: var(--border);
 }
 
-/* Download button */
-#download-btn {
+/* Download buttons */
+.dl-group {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#download-png, #download-jpg {
   background: var(--accent);
   color: #fff;
   border: none;
@@ -210,13 +189,22 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
   width: 100%;
   transition: opacity 0.15s;
 }
-#download-btn:hover { opacity: 0.85; }
+#download-jpg {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+#download-png:hover { opacity: 0.85; }
+#download-jpg:hover { color: var(--text); }
 
 /* ── Preview ── */
 #preview {
   flex: 1;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Checkerboard base */
@@ -234,9 +222,10 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
   background-color: #222;
 }
 
-#preview-canvas-bg {
-  position: absolute;
-  inset: 0;
+#preview-canvas {
+  position: relative;
+  display: block;
+  image-rendering: pixelated;
 }
 </style>
 </head>
@@ -269,25 +258,13 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
   <div class="divider"></div>
 
   <div class="control-group">
-    <div class="section-label">Tile Size</div>
-    <div class="tile-toggles">
-      <div class="tile-toggle" data-size="32">32</div>
-      <div class="tile-toggle active" data-size="64">64</div>
-      <div class="tile-toggle" data-size="128">128</div>
-      <div class="tile-toggle" data-size="256">256</div>
-    </div>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="control-group">
     <div class="slider-row">
       <div class="slider-label"><span>Density</span><span id="density-val">50</span></div>
       <input type="range" id="density" min="0" max="100" value="50">
     </div>
     <div class="slider-row">
-      <div class="slider-label"><span>Stroke</span><span id="stroke-val">1.5</span></div>
-      <input type="range" id="stroke" min="1" max="12" value="3" step="1">
+      <div class="slider-label"><span>Stroke</span><span id="stroke-val">3.0</span></div>
+      <input type="range" id="stroke" min="1" max="24" value="6" step="1">
     </div>
   </div>
 
@@ -327,22 +304,24 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
     </div>
   </div>
 
-  <button id="download-btn">Download PNG</button>
+  <div class="dl-group">
+    <button id="download-png">PNG — Alpha</button>
+    <button id="download-jpg">JPG — White BG</button>
+  </div>
 </div>
 
 <div id="preview">
-  <canvas id="preview-canvas-bg"></canvas>
+  <canvas id="preview-canvas"></canvas>
 </div>
-
-<canvas id="tile-canvas" style="display:none"></canvas>
 
 <script>
 // ── State ──
+const TEXTURE_SIZE = 1024;
 const state = {
   pattern: 'dots-grid',
-  tileSize: 64,
+  tileSize: TEXTURE_SIZE,
   density: 50,
-  stroke: 1.5,
+  stroke: 3.0,
   fg: '#ffffff',
   bg: '#1a1a2e',
   transparentBg: false,
@@ -716,39 +695,37 @@ const RENDERERS = {
 };
 
 // ── Render pipeline ──
-const tileCvs = document.getElementById('tile-canvas');
-const previewCvs = document.getElementById('preview-canvas-bg');
+const previewCvs = document.getElementById('preview-canvas');
 
-function renderTile() {
-  const size = state.tileSize;
-  tileCvs.width = size;
-  tileCvs.height = size;
-  const ctx = tileCvs.getContext('2d');
-  ctx.clearRect(0, 0, size, size);
-  RENDERERS[state.pattern](ctx, size, state);
-  return tileCvs;
+// Offscreen canvas for the 1024×1024 texture
+const textureCvs = document.createElement('canvas');
+textureCvs.width = TEXTURE_SIZE;
+textureCvs.height = TEXTURE_SIZE;
+
+function renderTexture() {
+  const ctx = textureCvs.getContext('2d');
+  ctx.clearRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+  RENDERERS[state.pattern](ctx, TEXTURE_SIZE, state);
 }
 
 function updatePreview() {
-  const tile = renderTile();
-  const url = tile.toDataURL('image/png');
+  renderTexture();
 
   const preview = document.getElementById('preview');
   const pw = preview.clientWidth;
   const ph = preview.clientHeight;
+  const scale = Math.min(pw / TEXTURE_SIZE, ph / TEXTURE_SIZE);
+  const drawW = Math.round(TEXTURE_SIZE * scale);
+  const drawH = Math.round(TEXTURE_SIZE * scale);
 
-  previewCvs.width = pw;
-  previewCvs.height = ph;
+  previewCvs.width = drawW;
+  previewCvs.height = drawH;
+  previewCvs.style.width = drawW + 'px';
+  previewCvs.style.height = drawH + 'px';
 
   const pCtx = previewCvs.getContext('2d');
-  const img = new Image();
-  img.onload = () => {
-    pCtx.clearRect(0, 0, pw, ph);
-    const pat = pCtx.createPattern(img, 'repeat');
-    pCtx.fillStyle = pat;
-    pCtx.fillRect(0, 0, pw, ph);
-  };
-  img.src = url;
+  pCtx.clearRect(0, 0, drawW, drawH);
+  pCtx.drawImage(textureCvs, 0, 0, drawW, drawH);
 }
 
 // ── UI Wiring ──
@@ -775,15 +752,6 @@ patternSelect.addEventListener('change', () => {
   state.pattern = patternSelect.value;
   updateColorUI();
   updatePreview();
-});
-
-document.querySelectorAll('.tile-toggle').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tile-toggle').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.tileSize = parseInt(btn.dataset.size, 10);
-    updatePreview();
-  });
 });
 
 densitySlider.addEventListener('input', () => {
@@ -821,16 +789,35 @@ document.querySelectorAll('.m-color').forEach((picker, i) => {
 });
 
 // ── Download ──
-document.getElementById('download-btn').addEventListener('click', () => {
-  const tile = renderTile();
-  tile.toBlob(blob => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pattern-${state.pattern}-${state.tileSize}.png`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+document.getElementById('download-png').addEventListener('click', () => {
+  renderTexture();
+  textureCvs.toBlob(blob => {
+    triggerDownload(blob, `pattern-${state.pattern}-1024.png`);
   }, 'image/png');
+});
+
+document.getElementById('download-jpg').addEventListener('click', () => {
+  // Composite onto white before JPEG encode
+  const flat = document.createElement('canvas');
+  flat.width = TEXTURE_SIZE;
+  flat.height = TEXTURE_SIZE;
+  const fCtx = flat.getContext('2d');
+  fCtx.fillStyle = '#ffffff';
+  fCtx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+  renderTexture();
+  fCtx.drawImage(textureCvs, 0, 0);
+  flat.toBlob(blob => {
+    triggerDownload(blob, `pattern-${state.pattern}-1024.jpg`);
+  }, 'image/jpeg', 0.95);
 });
 
 // ── Resize observer ──
