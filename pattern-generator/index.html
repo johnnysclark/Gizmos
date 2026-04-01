@@ -49,33 +49,6 @@ body {
   color: var(--text);
 }
 
-/* ── Sidebar preview ── */
-.preview-wrap {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 3px;
-  overflow: hidden;
-}
-.preview-wrap::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(45deg, #2c2c2c 25%, transparent 25%),
-    linear-gradient(-45deg, #2c2c2c 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #2c2c2c 75%),
-    linear-gradient(-45deg, transparent 75%, #2c2c2c 75%);
-  background-size: 10px 10px;
-  background-position: 0 0, 0 5px, 5px -5px, -5px 0;
-  background-color: #222;
-}
-#sidebar-preview {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-}
 
 .section-label {
   font-size: 10px;
@@ -244,11 +217,6 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; width: 16px
 
 <div id="sidebar">
   <h1>Pattern Gen</h1>
-
-  <!-- Live mini preview -->
-  <div class="preview-wrap">
-    <canvas id="sidebar-preview"></canvas>
-  </div>
 
   <div class="control-group">
     <div class="section-label">Pattern</div>
@@ -537,7 +505,6 @@ const RENDERERS = {
 
 // ── Render pipeline ──
 const previewCvs = document.getElementById('preview-canvas');
-const sidebarCvs = document.getElementById('sidebar-preview');
 const textureCvs = document.createElement('canvas');
 textureCvs.width = TEXTURE_SIZE;
 textureCvs.height = TEXTURE_SIZE;
@@ -548,25 +515,8 @@ function renderTexture() {
   RENDERERS[state.pattern](ctx, TEXTURE_SIZE, state);
 }
 
-function updateSidebarPreview() {
-  const pw = sidebarCvs.parentElement.clientWidth;
-  sidebarCvs.width = pw;
-  sidebarCvs.height = pw;
-  const ctx = sidebarCvs.getContext('2d');
-  ctx.clearRect(0, 0, pw, pw);
-  // 2×2 tiled mini preview — shows the repeat clearly
-  const ts = Math.floor(pw / 2);
-  const mini = document.createElement('canvas');
-  mini.width = ts; mini.height = ts;
-  RENDERERS[state.pattern](mini.getContext('2d'), ts, state);
-  const pat = ctx.createPattern(mini, 'repeat');
-  ctx.fillStyle = pat;
-  ctx.fillRect(0, 0, pw, pw);
-}
-
 function updatePreview() {
   renderTexture();
-  updateSidebarPreview();
 
   const preview = document.getElementById('preview');
   const pw = preview.clientWidth, ph = preview.clientHeight;
