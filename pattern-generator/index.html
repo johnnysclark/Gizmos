@@ -49,6 +49,34 @@ body {
   color: var(--text);
 }
 
+/* ── Sidebar preview ── */
+.preview-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.preview-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(45deg, #2c2c2c 25%, transparent 25%),
+    linear-gradient(-45deg, #2c2c2c 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2c2c2c 75%),
+    linear-gradient(-45deg, transparent 75%, #2c2c2c 75%);
+  background-size: 10px 10px;
+  background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+  background-color: #222;
+}
+#sidebar-preview {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .section-label {
   font-size: 10px;
   text-transform: uppercase;
@@ -108,15 +136,15 @@ input[type=range] {
 }
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--accent);
   cursor: pointer;
 }
 input[type=range]::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--accent);
   border: none;
@@ -150,22 +178,8 @@ input[type=color] {
 .check-row label { color: var(--text-dim); font-size: 11px; cursor: pointer; }
 input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
 
-/* Memphis multi-color */
-#memphis-colors {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-}
-.memphis-swatch input[type=color] {
-  width: 28px;
-  height: 28px;
-}
-
 /* Divider */
-.divider {
-  height: 1px;
-  background: var(--border);
-}
+.divider { height: 1px; background: var(--border); }
 
 /* Download buttons */
 .dl-group {
@@ -197,7 +211,7 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
 #download-png:hover { opacity: 0.85; }
 #download-jpg:hover { color: var(--text); }
 
-/* ── Preview ── */
+/* ── Main preview ── */
 #preview {
   flex: 1;
   position: relative;
@@ -206,8 +220,6 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
   align-items: center;
   justify-content: center;
 }
-
-/* Checkerboard base */
 #preview::before {
   content: '';
   position: absolute;
@@ -221,7 +233,6 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
   background-position: 0 0, 0 8px, 8px -8px, -8px 0;
   background-color: #222;
 }
-
 #preview-canvas {
   position: relative;
   display: block;
@@ -234,12 +245,16 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
 <div id="sidebar">
   <h1>Pattern Gen</h1>
 
+  <!-- Live mini preview -->
+  <div class="preview-wrap">
+    <canvas id="sidebar-preview"></canvas>
+  </div>
+
   <div class="control-group">
     <div class="section-label">Pattern</div>
     <select id="pattern-select">
       <optgroup label="Classic">
-        <option value="dots-grid">Dots — Grid</option>
-        <option value="dots-stagger" selected>Dots — Staggered</option>
+        <option value="dots-grid" selected>Dots</option>
         <option value="lines-h">Lines — Horizontal</option>
         <option value="lines-v">Lines — Vertical</option>
         <option value="lines-diag">Lines — Diagonal 45°</option>
@@ -248,9 +263,9 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
         <option value="grid">Grid</option>
       </optgroup>
       <optgroup label="Memphis">
-        <option value="confetti">Confetti</option>
-        <option value="squiggles">Squiggles</option>
-        <option value="terrazzo">Terrazzo</option>
+        <option value="dashes">Dashes</option>
+        <option value="zigzag">Zigzag</option>
+        <option value="arcs">Arcs</option>
       </optgroup>
     </select>
   </div>
@@ -270,7 +285,7 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
 
   <div class="divider"></div>
 
-  <div class="control-group" id="classic-colors">
+  <div class="control-group">
     <div class="section-label">Colors</div>
     <div class="color-row">
       <label>Foreground</label>
@@ -283,24 +298,6 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
     <div class="check-row">
       <input type="checkbox" id="transparent-bg">
       <label for="transparent-bg">Transparent background</label>
-    </div>
-  </div>
-
-  <div class="control-group" id="memphis-color-group" style="display:none">
-    <div class="section-label">Memphis Colors</div>
-    <div id="memphis-colors">
-      <div class="memphis-swatch"><input type="color" class="m-color" value="#ff6b6b"></div>
-      <div class="memphis-swatch"><input type="color" class="m-color" value="#ffd93d"></div>
-      <div class="memphis-swatch"><input type="color" class="m-color" value="#6bcb77"></div>
-      <div class="memphis-swatch"><input type="color" class="m-color" value="#4d96ff"></div>
-    </div>
-    <div class="color-row">
-      <label>Background</label>
-      <input type="color" id="m-bg-color" value="#f0e6d3">
-    </div>
-    <div class="check-row">
-      <input type="checkbox" id="m-transparent-bg">
-      <label for="m-transparent-bg">Transparent background</label>
     </div>
   </div>
 
@@ -318,26 +315,20 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
 // ── State ──
 const TEXTURE_SIZE = 1024;
 const state = {
-  pattern: 'dots-stagger',
-  tileSize: TEXTURE_SIZE,
-  density: 30,   // controls count per row (2–16)
-  stroke: 80,    // 1–100: size as % of cell — 80 ≈ 50% area coverage for dots
+  pattern: 'dots-grid',
+  density: 30,
+  stroke: 80,
   fg: '#000000',
   bg: '#ffffff',
   transparentBg: false,
-  memphisColors: ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff'],
-  memphisBg: '#f0e6d3',
-  memphisTransparentBg: false,
 };
-
-const MEMPHIS = new Set(['confetti','squiggles','terrazzo']);
 
 // ── Helpers ──
 // size factor: stroke slider (1-100) → 0.01..1.0
 function sf(s) { return s.stroke / 100; }
-// element count from density (always integer, 2–16)
+// element count from density (integer, 2–16)
 function elCount(s) { return Math.max(2, Math.round(2 + (s.density / 100) * 14)); }
-// even element count (for patterns requiring even rows/cols)
+// even element count
 function elCountEven(s) { const n = elCount(s); return n % 2 === 0 ? n : n + 1; }
 
 // ── PRNG (mulberry32) ──
@@ -353,14 +344,13 @@ function makePRNG(seed) {
 }
 
 // ── Pattern Renderers ──
-// Tiling guarantee: spacing = size / count (integer division).
-// Every element is placed at i * spacing, so the grid wraps perfectly.
+// All use: spacing = size / count (integer division) → perfect seamless tiling.
+// Line weight formula: lw = sp * sf(s) — consistent across all patterns.
 
 function renderDotsGrid(ctx, size, s) {
   const n = elCount(s);
-  const sp = size / n;                        // exact cell size
-  const r = sp * 0.5 * sf(s);               // radius: 0–50% of cell
-
+  const sp = size / n;
+  const r = sp * 0.5 * sf(s);
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
   for (let row = 0; row < n; row++) {
@@ -372,76 +362,37 @@ function renderDotsGrid(ctx, size, s) {
   }
 }
 
-function renderDotsStagger(ctx, size, s) {
-  // Even row count: row 0 and row n share the same x-offset (both even) → seamless in Y.
-  const n = elCountEven(s);
-  const sp = size / n;
-  const r = sp * 0.5 * sf(s);
-
-  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
-  ctx.fillStyle = s.fg;
-
-  for (let row = 0; row < n; row++) {
-    const xOff = (row % 2) * sp * 0.5;
-    const y = row * sp + sp / 2;
-    for (let col = 0; col < n; col++) {
-      const xBase = col * sp + xOff;
-      // Draw at -size, 0, +size offsets: canvas clips the out-of-bounds portions,
-      // so any dot whose center is at x=0 or x=size gets both halves drawn correctly.
-      for (let t = -1; t <= 1; t++) {
-        const x = xBase + t * size;
-        if (x + r <= 0 || x - r >= size) continue; // fully outside — skip
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-  }
-}
-
 function renderLinesH(ctx, size, s) {
   const n = elCount(s);
   const sp = size / n;
-  const lw = Math.max(1, sp * sf(s));        // line fills up to 100% of cell
-
+  const lw = Math.max(1, sp * sf(s));
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
-  // Use fillRect instead of stroke to avoid half-pixel seam issues
-  for (let i = 0; i < n; i++) {
-    const y = i * sp + (sp - lw) / 2;
-    ctx.fillRect(0, y, size, lw);
-  }
+  for (let i = 0; i < n; i++) ctx.fillRect(0, i * sp + (sp - lw) / 2, size, lw);
 }
 
 function renderLinesV(ctx, size, s) {
   const n = elCount(s);
   const sp = size / n;
   const lw = Math.max(1, sp * sf(s));
-
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
-  for (let i = 0; i < n; i++) {
-    const x = i * sp + (sp - lw) / 2;
-    ctx.fillRect(x, 0, lw, size);
-  }
+  for (let i = 0; i < n; i++) ctx.fillRect(i * sp + (sp - lw) / 2, 0, lw, size);
 }
 
 function renderLinesDiag(ctx, size, s) {
   const n = elCount(s);
   const sp = size / n;
   const lw = Math.max(1, sp * sf(s));
-
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.strokeStyle = s.fg;
   ctx.lineWidth = lw;
-  // 'butt' cap + endpoints extended far outside the canvas so no cap artifact
-  // appears within the tile at the top or bottom edge.
   ctx.lineCap = 'butt';
   for (let i = -1; i <= n + 1; i++) {
     const x0 = i * sp;
     ctx.beginPath();
-    ctx.moveTo(x0 - size, -size);    // well above/left of canvas
-    ctx.lineTo(x0 + 2 * size, 2 * size); // well below/right of canvas
+    ctx.moveTo(x0 - size, -size);
+    ctx.lineTo(x0 + 2 * size, 2 * size);
     ctx.stroke();
   }
 }
@@ -449,170 +400,144 @@ function renderLinesDiag(ctx, size, s) {
 function renderCrosshatch(ctx, size, s) {
   const n = elCount(s);
   const sp = size / n;
-  const lw = Math.max(1, sp * sf(s) * 0.6);
-
+  const lw = Math.max(1, sp * sf(s));
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
   for (let i = 0; i < n; i++) {
-    const h = i * sp + (sp - lw) / 2;
-    ctx.fillRect(0, h, size, lw);           // horizontal stripe
-    ctx.fillRect(h, 0, lw, size);           // vertical stripe
+    const pos = i * sp + (sp - lw) / 2;
+    ctx.fillRect(0, pos, size, lw);   // horizontal
+    ctx.fillRect(pos, 0, lw, size);   // vertical
   }
 }
 
 function renderCheckerboard(ctx, size, s) {
-  // Even count so alternating pattern repeats cleanly
   const n = elCountEven(s);
   const sp = size / n;
-
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
-  for (let r = 0; r < n; r++) {
-    for (let c = 0; c < n; c++) {
+  for (let r = 0; r < n; r++)
+    for (let c = 0; c < n; c++)
       if ((r + c) % 2 === 0) ctx.fillRect(c * sp, r * sp, sp, sp);
-    }
-  }
 }
 
 function renderGrid(ctx, size, s) {
   const n = elCount(s);
   const sp = size / n;
-  const lw = Math.max(1, sp * sf(s) * 0.5);
-
+  const lw = Math.max(1, sp * sf(s));
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
   for (let i = 0; i < n; i++) {
     const pos = i * sp;
-    // Draw line on the boundary of each cell
-    ctx.fillRect(pos, 0, lw, size);
-    ctx.fillRect(0, pos, size, lw);
+    ctx.fillRect(pos, 0, lw, size);   // vertical line at cell left edge
+    ctx.fillRect(0, pos, size, lw);   // horizontal line at cell top edge
   }
 }
 
-// ── Memphis ──
-function drawMotif(ctx, px, py, color, rng, motifSize) {
-  const kind = Math.floor(rng() * 3);
-  const angle = rng() * Math.PI * 2;
-  const scale = 0.5 + rng() * 0.8;
-  const sz = motifSize * scale;
-  ctx.fillStyle = color;
-  ctx.save();
-  ctx.translate(px, py);
-  ctx.rotate(angle);
-  if (kind === 0) {
-    ctx.beginPath(); ctx.arc(0, 0, sz, 0, Math.PI * 2); ctx.fill();
-  } else if (kind === 1) {
-    ctx.beginPath();
-    ctx.moveTo(0, -sz); ctx.lineTo(sz * 0.866, sz * 0.5); ctx.lineTo(-sz * 0.866, sz * 0.5);
-    ctx.closePath(); ctx.fill();
-  } else {
-    ctx.fillRect(-sz * 0.9, -sz * 0.45, sz * 1.8, sz * 0.9);
-  }
-  ctx.restore();
-}
+// ── Memphis Patterns ──
 
-function renderConfetti(ctx, size, s) {
+function renderDashes(ctx, size, s) {
   const density = s.density / 100;
-  const count = Math.round(8 + density * 50);
-  const motifSize = size * (0.02 + sf(s) * 0.06);
-  const colors = s.memphisColors;
-  if (!s.memphisTransparentBg) { ctx.fillStyle = s.memphisBg; ctx.fillRect(0, 0, size, size); }
+  const count = Math.round(15 + density * 130);
+  const dashLen = size * (0.03 + sf(s) * 0.09);
+  const strokeW = Math.max(2, dashLen * 0.28);
+  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
+  ctx.strokeStyle = s.fg;
+  ctx.lineWidth = strokeW;
+  ctx.lineCap = 'round';
   const rng = makePRNG(42);
-  const motifs = [];
+  const items = [];
   for (let i = 0; i < count; i++) {
-    motifs.push({ x: rng() * size, y: rng() * size, color: colors[Math.floor(rng() * colors.length)], seed: (rng() * 0xFFFFFF) | 0 });
+    items.push({ x: rng() * size, y: rng() * size, a: rng() * Math.PI });
   }
-  for (const m of motifs) {
+  for (const d of items) {
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      drawMotif(ctx, m.x + dx * size, m.y + dy * size, m.color, makePRNG(m.seed), motifSize);
+      const cx = d.x + dx * size, cy = d.y + dy * size;
+      if (cx + dashLen < 0 || cx - dashLen > size || cy + dashLen < 0 || cy - dashLen > size) continue;
+      const ex = Math.cos(d.a) * dashLen / 2, ey = Math.sin(d.a) * dashLen / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx - ex, cy - ey);
+      ctx.lineTo(cx + ex, cy + ey);
+      ctx.stroke();
     }
   }
 }
 
-function renderSquiggles(ctx, size, s) {
-  const density = s.density / 100;
-  const count = Math.round(3 + density * 18);
-  const strokeW = size * (0.005 + sf(s) * 0.025);
-  const colors = s.memphisColors;
-  if (!s.memphisTransparentBg) { ctx.fillStyle = s.memphisBg; ctx.fillRect(0, 0, size, size); }
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  const rng = makePRNG(7);
-  const squiggles = [];
-  for (let i = 0; i < count; i++) {
-    squiggles.push({ x: rng() * size, y: rng() * size, color: colors[Math.floor(rng() * colors.length)], seed: (rng() * 0xFFFFFF) | 0 });
+function renderZigzag(ctx, size, s) {
+  // Horizontal zigzag stripes. zigZ (even) half-periods per row width → seamless.
+  const n = elCount(s);
+  const sp = size / n;
+  const amp = sp * 0.32;
+  const lw = Math.max(1, sp * sf(s));
+  const zigZ = 2 * Math.max(2, Math.round(1 + (s.density / 100) * 7));
+  const halfP = size / zigZ;
+  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
+  ctx.strokeStyle = s.fg;
+  ctx.lineWidth = lw;
+  ctx.lineJoin = 'miter';
+  ctx.lineCap = 'butt';
+  for (let row = 0; row < n; row++) {
+    const cy = row * sp + sp / 2;
+    ctx.beginPath();
+    // Start one halfP before x=0 so no cap artifact at left edge
+    for (let k = -1; k <= zigZ + 1; k++) {
+      const x = k * halfP;
+      const y = cy + (k % 2 === 0 ? -amp : amp);
+      k === -1 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
   }
-  for (const sq of squiggles) {
+}
+
+function renderArcs(ctx, size, s) {
+  // Scattered C-shaped semicircles, snapped to 4 rotations.
+  const density = s.density / 100;
+  const count = Math.round(10 + density * 65);
+  const arcR = size * (0.02 + sf(s) * 0.06);
+  const strokeW = Math.max(2, arcR * 0.42);
+  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
+  ctx.strokeStyle = s.fg;
+  ctx.lineWidth = strokeW;
+  ctx.lineCap = 'round';
+  const rng = makePRNG(13);
+  const items = [];
+  for (let i = 0; i < count; i++) {
+    items.push({
+      x: rng() * size, y: rng() * size,
+      rot: Math.floor(rng() * 4) * (Math.PI / 2),
+    });
+  }
+  const pad = arcR + strokeW;
+  for (const arc of items) {
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const lr = makePRNG(sq.seed);
-      const len = size * (0.12 + lr() * 0.22);
-      const amp = strokeW * (3 + lr() * 5);
-      const freq = 3 + Math.round(lr() * 5);
-      const angle = lr() * Math.PI * 2;
+      const cx = arc.x + dx * size, cy = arc.y + dy * size;
+      if (cx + pad < 0 || cx - pad > size || cy + pad < 0 || cy - pad > size) continue;
       ctx.save();
-      ctx.translate(sq.x + dx * size, sq.y + dy * size);
-      ctx.rotate(angle);
-      ctx.strokeStyle = sq.color;
-      ctx.lineWidth = strokeW;
+      ctx.translate(cx, cy);
+      ctx.rotate(arc.rot);
       ctx.beginPath();
-      for (let t = 0; t <= 60; t++) {
-        const px = (t / 60) * len - len / 2;
-        const py = Math.sin((t / 60) * Math.PI * 2 * freq) * amp;
-        t === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-      }
+      ctx.arc(0, 0, arcR, 0, Math.PI);  // semicircle
       ctx.stroke();
       ctx.restore();
     }
   }
 }
 
-function renderTerrazzo(ctx, size, s) {
-  const density = s.density / 100;
-  const count = Math.round(10 + density * 60);
-  const baseSize = size * (0.02 + sf(s) * 0.08);
-  const colors = s.memphisColors;
-  if (!s.memphisTransparentBg) { ctx.fillStyle = s.memphisBg; ctx.fillRect(0, 0, size, size); }
-  const rng = makePRNG(13);
-  const chips = [];
-  for (let i = 0; i < count; i++) {
-    chips.push({ x: rng() * size, y: rng() * size, color: colors[Math.floor(rng() * colors.length)], seed: (rng() * 0xFFFFFF) | 0 });
-  }
-  for (const chip of chips) {
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const lr = makePRNG(chip.seed);
-      const pts = 5 + Math.floor(lr() * 4);
-      const a0 = lr() * Math.PI * 2;
-      ctx.save();
-      ctx.translate(chip.x + dx * size, chip.y + dy * size);
-      ctx.rotate(a0);
-      ctx.fillStyle = chip.color;
-      ctx.beginPath();
-      for (let p = 0; p < pts; p++) {
-        const a = (p / pts) * Math.PI * 2;
-        const r = baseSize * (0.6 + lr() * 0.7);
-        p === 0 ? ctx.moveTo(Math.cos(a)*r, Math.sin(a)*r) : ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
-      }
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
-    }
-  }
-}
-
 const RENDERERS = {
-  'dots-grid': renderDotsGrid,
-  'dots-stagger': renderDotsStagger,
-  'lines-h': renderLinesH,
-  'lines-v': renderLinesV,
-  'lines-diag': renderLinesDiag,
-  'crosshatch': renderCrosshatch,
+  'dots-grid':    renderDotsGrid,
+  'lines-h':      renderLinesH,
+  'lines-v':      renderLinesV,
+  'lines-diag':   renderLinesDiag,
+  'crosshatch':   renderCrosshatch,
   'checkerboard': renderCheckerboard,
-  'grid': renderGrid,
-  'confetti': renderConfetti,
-  'squiggles': renderSquiggles,
-  'terrazzo': renderTerrazzo,
+  'grid':         renderGrid,
+  'dashes':       renderDashes,
+  'zigzag':       renderZigzag,
+  'arcs':         renderArcs,
 };
 
 // ── Render pipeline ──
 const previewCvs = document.getElementById('preview-canvas');
+const sidebarCvs = document.getElementById('sidebar-preview');
 const textureCvs = document.createElement('canvas');
 textureCvs.width = TEXTURE_SIZE;
 textureCvs.height = TEXTURE_SIZE;
@@ -623,14 +548,30 @@ function renderTexture() {
   RENDERERS[state.pattern](ctx, TEXTURE_SIZE, state);
 }
 
+function updateSidebarPreview() {
+  const pw = sidebarCvs.parentElement.clientWidth;
+  sidebarCvs.width = pw;
+  sidebarCvs.height = pw;
+  const ctx = sidebarCvs.getContext('2d');
+  ctx.clearRect(0, 0, pw, pw);
+  // 2×2 tiled mini preview — shows the repeat clearly
+  const ts = Math.floor(pw / 2);
+  const mini = document.createElement('canvas');
+  mini.width = ts; mini.height = ts;
+  RENDERERS[state.pattern](mini.getContext('2d'), ts, state);
+  const pat = ctx.createPattern(mini, 'repeat');
+  ctx.fillStyle = pat;
+  ctx.fillRect(0, 0, pw, pw);
+}
+
 function updatePreview() {
   renderTexture();
+  updateSidebarPreview();
+
   const preview = document.getElementById('preview');
-  const pw = preview.clientWidth;
-  const ph = preview.clientHeight;
+  const pw = preview.clientWidth, ph = preview.clientHeight;
   const scale = Math.min(pw / TEXTURE_SIZE, ph / TEXTURE_SIZE);
-  const drawW = Math.round(TEXTURE_SIZE * scale);
-  const drawH = Math.round(TEXTURE_SIZE * scale);
+  const drawW = Math.round(TEXTURE_SIZE * scale), drawH = Math.round(TEXTURE_SIZE * scale);
   previewCvs.width = drawW;
   previewCvs.height = drawH;
   previewCvs.style.width = drawW + 'px';
@@ -641,50 +582,22 @@ function updatePreview() {
 }
 
 // ── UI Wiring ──
-const patternSelect = document.getElementById('pattern-select');
-const densitySlider = document.getElementById('density');
-const strokeSlider = document.getElementById('stroke');
-const fgPicker = document.getElementById('fg-color');
-const bgPicker = document.getElementById('bg-color');
-const transparentCheck = document.getElementById('transparent-bg');
-const mBgPicker = document.getElementById('m-bg-color');
-const mTransparentCheck = document.getElementById('m-transparent-bg');
-const classicColors = document.getElementById('classic-colors');
-const memphisColorGroup = document.getElementById('memphis-color-group');
-
-function isMemphis() { return MEMPHIS.has(state.pattern); }
-function updateColorUI() {
-  const m = isMemphis();
-  classicColors.style.display = m ? 'none' : 'flex';
-  memphisColorGroup.style.display = m ? 'flex' : 'none';
-}
-
-patternSelect.addEventListener('change', () => {
-  state.pattern = patternSelect.value;
-  updateColorUI();
-  updatePreview();
+document.getElementById('pattern-select').addEventListener('change', e => {
+  state.pattern = e.target.value; updatePreview();
 });
-
-densitySlider.addEventListener('input', () => {
-  state.density = parseInt(densitySlider.value, 10);
+document.getElementById('density').addEventListener('input', e => {
+  state.density = parseInt(e.target.value);
   document.getElementById('density-val').textContent = state.density;
   updatePreview();
 });
-
-strokeSlider.addEventListener('input', () => {
-  state.stroke = parseInt(strokeSlider.value, 10);
+document.getElementById('stroke').addEventListener('input', e => {
+  state.stroke = parseInt(e.target.value);
   document.getElementById('stroke-val').textContent = state.stroke;
   updatePreview();
 });
-
-fgPicker.addEventListener('input', () => { state.fg = fgPicker.value; updatePreview(); });
-bgPicker.addEventListener('input', () => { state.bg = bgPicker.value; updatePreview(); });
-transparentCheck.addEventListener('change', () => { state.transparentBg = transparentCheck.checked; updatePreview(); });
-mBgPicker.addEventListener('input', () => { state.memphisBg = mBgPicker.value; updatePreview(); });
-mTransparentCheck.addEventListener('change', () => { state.memphisTransparentBg = mTransparentCheck.checked; updatePreview(); });
-document.querySelectorAll('.m-color').forEach((picker, i) => {
-  picker.addEventListener('input', () => { state.memphisColors[i] = picker.value; updatePreview(); });
-});
+document.getElementById('fg-color').addEventListener('input', e => { state.fg = e.target.value; updatePreview(); });
+document.getElementById('bg-color').addEventListener('input', e => { state.bg = e.target.value; updatePreview(); });
+document.getElementById('transparent-bg').addEventListener('change', e => { state.transparentBg = e.target.checked; updatePreview(); });
 
 // ── Download ──
 function triggerDownload(blob, filename) {
@@ -696,26 +609,22 @@ function triggerDownload(blob, filename) {
 
 document.getElementById('download-png').addEventListener('click', () => {
   renderTexture();
-  textureCvs.toBlob(blob => triggerDownload(blob, `pattern-${state.pattern}-1024.png`), 'image/png');
+  textureCvs.toBlob(b => triggerDownload(b, `pattern-${state.pattern}-1024.png`), 'image/png');
 });
 
 document.getElementById('download-jpg').addEventListener('click', () => {
   const flat = document.createElement('canvas');
   flat.width = flat.height = TEXTURE_SIZE;
   const fCtx = flat.getContext('2d');
-  fCtx.fillStyle = '#ffffff';
-  fCtx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-  renderTexture();
-  fCtx.drawImage(textureCvs, 0, 0);
-  flat.toBlob(blob => triggerDownload(blob, `pattern-${state.pattern}-1024.jpg`), 'image/jpeg', 0.95);
+  fCtx.fillStyle = '#ffffff'; fCtx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+  renderTexture(); fCtx.drawImage(textureCvs, 0, 0);
+  flat.toBlob(b => triggerDownload(b, `pattern-${state.pattern}-1024.jpg`), 'image/jpeg', 0.95);
 });
 
 // ── Resize observer ──
-const ro = new ResizeObserver(() => updatePreview());
-ro.observe(document.getElementById('preview'));
+new ResizeObserver(() => updatePreview()).observe(document.getElementById('preview'));
 
 // ── Init ──
-updateColorUI();
 updatePreview();
 </script>
 </body>
