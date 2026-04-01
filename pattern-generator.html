@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pattern Generator</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #1a1a1a;
+  --surface: #242424;
+  --border: #333;
+  --text: #ccc;
+  --text-dim: #888;
+  --accent: #5a9;
+}
+
+body {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: var(--surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.sidebar h1 {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-group label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+select, input[type="range"] {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+select:focus { border-color: var(--accent); }
+
+select option { background: var(--bg); color: var(--text); }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: var(--border);
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--text);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--text);
+  border: none;
+  cursor: pointer;
+}
+
+.size-toggles {
+  display: flex;
+  gap: 4px;
+}
+
+.size-toggles button {
+  flex: 1;
+  padding: 5px 0;
+  background: var(--bg);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.size-toggles button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-row input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px; height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.color-row input[type="color"]::-webkit-color-swatch { border: none; border-radius: 2px; }
+.color-row input[type="color"]::-moz-color-swatch { border: none; border-radius: 2px; }
+
+.color-row span {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-row input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 14px; height: 14px;
+  cursor: pointer;
+}
+
+.checkbox-row label {
+  font-size: 11px;
+  color: var(--text);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+#memphisColors {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider-value {
+  font-size: 10px;
+  color: var(--text-dim);
+  min-width: 28px;
+  text-align: right;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slider-row input[type="range"] { flex: 1; }
+
+.download-btn {
+  margin-top: auto;
+  padding: 10px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: opacity 0.15s;
+}
+
+.download-btn:hover { opacity: 0.85; }
+
+.preview-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.checkerboard {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(-45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2a2a2a 75%),
+    linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.preview-tiled {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  image-rendering: pixelated;
+}
+
+canvas { display: none; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>Pattern Gen</h1>
+
+  <div class="control-group">
+    <label>Pattern</label>
+    <select id="patternType">
+      <optgroup label="Classic">
+        <option value="dots-grid">Dots (Grid)</option>
+        <option value="dots-staggered">Dots (Staggered)</option>
+        <option value="lines-h">Horizontal Lines</option>
+        <option value="lines-v">Vertical Lines</option>
+        <option value="lines-diag">Diagonal Lines (45°)</option>
+        <option value="crosshatch">Crosshatch</option>
+        <option value="checkerboard">Checkerboard</option>
+        <option value="grid">Grid</option>
+      </optgroup>
+      <optgroup label="Memphis">
+        <option value="confetti">Confetti</option>
+        <option value="squiggles">Squiggles</option>
+        <option value="terrazzo">Terrazzo</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div class="control-group">
+    <label>Tile Size</label>
+    <div class="size-toggles">
+      <button data-size="32">32</button>
+      <button data-size="64" class="active">64</button>
+      <button data-size="128">128</button>
+      <button data-size="256">256</button>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label>Density</label>
+    <div class="slider-row">
+      <input type="range" id="density" min="0" max="100" value="50">
+      <span class="slider-value" id="densityVal">50</span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label>Stroke Weight</label>
+    <div class="slider-row">
+      <input type="range" id="strokeWeight" min="0.5" max="6" step="0.5" value="2">
+      <span class="slider-value" id="strokeVal">2</span>
+    </div>
+  </div>
+
+  <div class="control-group" id="singleColorGroup">
+    <label>Foreground</label>
+    <div class="color-row">
+      <input type="color" id="fgColor" value="#ffffff">
+      <span id="fgHex">#ffffff</span>
+    </div>
+  </div>
+
+  <div class="control-group" id="memphisColorGroup" style="display:none;">
+    <label>Colors</label>
+    <div id="memphisColors">
+      <div class="color-row"><input type="color" class="memphis-color" value="#ff6b6b"><span>#ff6b6b</span></div>
+      <div class="color-row"><input type="color" class="memphis-color" value="#4ecdc4"><span>#4ecdc4</span></div>
+      <div class="color-row"><input type="color" class="memphis-color" value="#ffe66d"><span>#ffe66d</span></div>
+      <div class="color-row"><input type="color" class="memphis-color" value="#a78bfa"><span>#a78bfa</span></div>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label>Background</label>
+    <div class="color-row">
+      <input type="color" id="bgColor" value="#1a1a1a">
+      <span id="bgHex">#1a1a1a</span>
+    </div>
+  </div>
+
+  <div class="checkbox-row">
+    <input type="checkbox" id="transparentBg">
+    <label for="transparentBg">Transparent background</label>
+  </div>
+
+  <button class="download-btn" id="downloadBtn">Download PNG</button>
+</div>
+
+<div class="preview-area">
+  <div class="checkerboard"></div>
+  <div class="preview-tiled" id="previewTiled"></div>
+</div>
+
+<canvas id="tileCanvas"></canvas>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('tileCanvas');
+const ctx = canvas.getContext('2d');
+const previewTiled = $('previewTiled');
+
+const state = {
+  pattern: 'dots-grid',
+  size: 64,
+  density: 50,
+  strokeWeight: 2,
+  fgColor: '#ffffff',
+  bgColor: '#1a1a1a',
+  transparentBg: false,
+  memphisColors: ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a78bfa']
+};
+
+const isMemphis = () => ['confetti', 'squiggles', 'terrazzo'].includes(state.pattern);
+
+// Seeded PRNG (mulberry32)
+function mulberry32(seed) {
+  return function() {
+    seed |= 0;
+    seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function drawPattern() {
+  const s = state.size;
+  canvas.width = s;
+  canvas.height = s;
+  ctx.clearRect(0, 0, s, s);
+
+  if (!state.transparentBg) {
+    ctx.fillStyle = state.bgColor;
+    ctx.fillRect(0, 0, s, s);
+  }
+
+  const d = state.density;
+  const sw = state.strokeWeight;
+  const fg = state.fgColor;
+
+  switch (state.pattern) {
+    case 'dots-grid': drawDotsGrid(s, d, sw, fg); break;
+    case 'dots-staggered': drawDotsStaggered(s, d, sw, fg); break;
+    case 'lines-h': drawLinesH(s, d, sw, fg); break;
+    case 'lines-v': drawLinesV(s, d, sw, fg); break;
+    case 'lines-diag': drawLinesDiag(s, d, sw, fg); break;
+    case 'crosshatch': drawCrosshatch(s, d, sw, fg); break;
+    case 'checkerboard': drawCheckerboard(s, d, fg); break;
+    case 'grid': drawGrid(s, d, sw, fg); break;
+    case 'confetti': drawConfetti(s, d, sw); break;
+    case 'squiggles': drawSquiggles(s, d, sw); break;
+    case 'terrazzo': drawTerrazzo(s, d, sw); break;
+  }
+
+  updatePreview();
+}
+
+function getSpacing(s, density) {
+  const minSpacing = 4;
+  const maxSpacing = s;
+  return maxSpacing - (density / 100) * (maxSpacing - minSpacing);
+}
+
+function drawCircleWrapped(x, y, r, s) {
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      ctx.beginPath();
+      ctx.arc(x + dx * s, y + dy * s, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawDotsGrid(s, d, sw, fg) {
+  const sp = getSpacing(s, d);
+  ctx.fillStyle = fg;
+  for (let y = sp / 2; y < s + sp; y += sp) {
+    for (let x = sp / 2; x < s + sp; x += sp) {
+      const px = ((x % s) + s) % s;
+      const py = ((y % s) + s) % s;
+      drawCircleWrapped(px, py, sw, s);
+    }
+  }
+}
+
+function drawDotsStaggered(s, d, sw, fg) {
+  const sp = getSpacing(s, d);
+  ctx.fillStyle = fg;
+  let row = 0;
+  for (let y = sp / 2; y < s + sp; y += sp) {
+    const offset = (row % 2) * (sp / 2);
+    for (let x = sp / 2 + offset; x < s + sp; x += sp) {
+      const px = ((x % s) + s) % s;
+      const py = ((y % s) + s) % s;
+      drawCircleWrapped(px, py, sw, s);
+    }
+    row++;
+  }
+}
+
+function drawLinesH(s, d, sw, fg) {
+  const sp = getSpacing(s, d);
+  ctx.strokeStyle = fg;
+  ctx.lineWidth = sw;
+  for (let y = sp / 2; y < s + sp; y += sp) {
+    const py = ((y % s) + s) % s;
+    ctx.beginPath();
+    ctx.moveTo(0, py);
+    ctx.lineTo(s, py);
+    ctx.stroke();
+  }
+}
+
+function drawLinesV(s, d, sw, fg) {
+  const sp = getSpacing(s, d);
+  ctx.strokeStyle = fg;
+  ctx.lineWidth = sw;
+  for (let x = sp / 2; x < s + sp; x += sp) {
+    const px = ((x % s) + s) % s;
+    ctx.beginPath();
+    ctx.moveTo(px, 0);
+    ctx.lineTo(px, s);
+    ctx.stroke();
+  }
+}
+
+function drawLinesDiag(s, d, sw, fg) {
+  const sp = getSpacing(s, d);
+  ctx.strokeStyle = fg;
+  ctx.lineWidth = sw;
+  for (let offset = -s; offset < s * 2; offset += sp) {
+    ctx.beginPath();
+    ctx.moveTo(offset, 0);
+    ctx.lineTo(offset + s, s);
+    ctx.stroke();
+  }
+}
+
+function drawCrosshatch(s, d, sw, fg) {
+  const sp = getSpacing(s, d);
+  ctx.strokeStyle = fg;
+  ctx.lineWidth = sw;
+  for (let offset = -s; offset < s * 2; offset += sp) {
+    ctx.beginPath();
+    ctx.moveTo(offset, 0);
+    ctx.lineTo(offset + s, s);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(offset + s, 0);
+    ctx.lineTo(offset, s);
+    ctx.stroke();
+  }
+}
+
+function drawCheckerboard(s, d, fg) {
+  const sp = getSpacing(s, d);
+  const cells = Math.max(2, Math.round(s / sp));
+  // Force even number of cells for seamless tiling
+  const evenCells = cells % 2 === 0 ? cells : cells + 1;
+  const cellSize = s / evenCells;
+  ctx.fillStyle = fg;
+  for (let row = 0; row < evenCells; row++) {
+    for (let col = 0; col < evenCells; col++) {
+      if ((row + col) % 2 === 0) {
+        ctx.fillRect(col * cellSize, row * cellSize, cellSize + 0.5, cellSize + 0.5);
+      }
+    }
+  }
+}
+
+function drawGrid(s, d, sw, fg) {
+  drawLinesH(s, d, sw, fg);
+  drawLinesV(s, d, sw, fg);
+}
+
+// Memphis patterns — seeded PRNG + 9-offset wrapping
+function drawConfetti(s, d, sw) {
+  const rng = mulberry32(42);
+  const count = Math.floor(3 + (d / 100) * (s * s / 200));
+  const colors = state.memphisColors;
+
+  for (let i = 0; i < count; i++) {
+    const x = rng() * s;
+    const y = rng() * s;
+    const color = colors[Math.floor(rng() * colors.length)];
+    const shape = Math.floor(rng() * 3);
+    const angle = rng() * Math.PI * 2;
+    const size = sw * 1.5 + rng() * sw * 2;
+
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        ctx.save();
+        ctx.translate(x + dx * s, y + dy * s);
+        ctx.rotate(angle);
+        ctx.fillStyle = color;
+        if (shape === 0) {
+          ctx.beginPath();
+          ctx.moveTo(0, -size);
+          ctx.lineTo(-size * 0.866, size * 0.5);
+          ctx.lineTo(size * 0.866, size * 0.5);
+          ctx.closePath();
+          ctx.fill();
+        } else if (shape === 1) {
+          ctx.beginPath();
+          ctx.arc(0, 0, size * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(-size * 0.4, -size * 0.8, size * 0.8, size * 1.6);
+        }
+        ctx.restore();
+      }
+    }
+  }
+}
+
+function drawSquiggles(s, d, sw) {
+  const rng = mulberry32(77);
+  const count = Math.floor(2 + (d / 100) * (s / 8));
+  const colors = state.memphisColors;
+
+  ctx.lineWidth = sw;
+  ctx.lineCap = 'round';
+
+  for (let i = 0; i < count; i++) {
+    const x = rng() * s;
+    const y = rng() * s;
+    const color = colors[Math.floor(rng() * colors.length)];
+    const angle = rng() * Math.PI * 2;
+    const segments = 4 + Math.floor(rng() * 4);
+    const amp = 3 + rng() * 6;
+    const freq = 0.15 + rng() * 0.15;
+    const len = s * 0.3 + rng() * s * 0.3;
+
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        ctx.save();
+        ctx.translate(x + dx * s, y + dy * s);
+        ctx.rotate(angle);
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        for (let t = 0; t <= segments; t++) {
+          const tt = t / segments;
+          const px = tt * len - len / 2;
+          const py = Math.sin(tt * Math.PI * 2 * (1 + segments * freq)) * amp;
+          if (t === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+}
+
+function drawTerrazzo(s, d, sw) {
+  const rng = mulberry32(123);
+  const count = Math.floor(3 + (d / 100) * (s * s / 300));
+  const colors = state.memphisColors;
+
+  for (let i = 0; i < count; i++) {
+    const x = rng() * s;
+    const y = rng() * s;
+    const color = colors[Math.floor(rng() * colors.length)];
+    const angle = rng() * Math.PI * 2;
+    const w = sw * 2 + rng() * sw * 3;
+    const h = sw * 1 + rng() * sw * 1.5;
+    const verts = 5 + Math.floor(rng() * 4);
+
+    // Pre-generate vertex randomness so it's consistent across 9 offsets
+    const vertRands = [];
+    for (let v = 0; v < verts; v++) vertRands.push(0.7 + rng() * 0.3);
+
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        ctx.save();
+        ctx.translate(x + dx * s, y + dy * s);
+        ctx.rotate(angle);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        for (let v = 0; v < verts; v++) {
+          const a = (v / verts) * Math.PI * 2;
+          const r = (v % 2 === 0 ? w : h) * vertRands[v];
+          const px = Math.cos(a) * r;
+          const py = Math.sin(a) * r;
+          if (v === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+}
+
+function updatePreview() {
+  canvas.toBlob(blob => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    previewTiled.style.backgroundImage = `url(${url})`;
+    if (previewTiled._blobUrl) URL.revokeObjectURL(previewTiled._blobUrl);
+    previewTiled._blobUrl = url;
+  });
+}
+
+function download() {
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pattern-${state.pattern}-${state.size}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+// Events
+$('patternType').addEventListener('change', e => {
+  state.pattern = e.target.value;
+  const memphis = isMemphis();
+  $('singleColorGroup').style.display = memphis ? 'none' : '';
+  $('memphisColorGroup').style.display = memphis ? '' : 'none';
+  drawPattern();
+});
+
+document.querySelectorAll('.size-toggles button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.size-toggles button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.size = parseInt(btn.dataset.size);
+    drawPattern();
+  });
+});
+
+$('density').addEventListener('input', e => {
+  state.density = parseInt(e.target.value);
+  $('densityVal').textContent = state.density;
+  drawPattern();
+});
+
+$('strokeWeight').addEventListener('input', e => {
+  state.strokeWeight = parseFloat(e.target.value);
+  $('strokeVal').textContent = state.strokeWeight;
+  drawPattern();
+});
+
+$('fgColor').addEventListener('input', e => {
+  state.fgColor = e.target.value;
+  $('fgHex').textContent = e.target.value;
+  drawPattern();
+});
+
+$('bgColor').addEventListener('input', e => {
+  state.bgColor = e.target.value;
+  $('bgHex').textContent = e.target.value;
+  drawPattern();
+});
+
+$('transparentBg').addEventListener('change', e => {
+  state.transparentBg = e.target.checked;
+  drawPattern();
+});
+
+document.querySelectorAll('.memphis-color').forEach((input, i) => {
+  input.addEventListener('input', e => {
+    state.memphisColors[i] = e.target.value;
+    e.target.nextElementSibling.textContent = e.target.value;
+    drawPattern();
+  });
+});
+
+$('downloadBtn').addEventListener('click', download);
+
+drawPattern();
+</script>
+</body>
+</html>
