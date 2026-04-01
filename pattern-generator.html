@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pattern Generator</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #1a1a1a;
+  --panel: #242424;
+  --border: #333;
+  --text: #ccc;
+  --text-dim: #777;
+  --accent: #5a8fff;
+  --input-bg: #2e2e2e;
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  display: flex;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #444 transparent;
+}
+
+.sidebar-header {
+  padding: 14px 16px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #eee;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.section-label { font-size: 10px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.8px; margin-bottom: 8px; }
+
+/* Pattern grid */
+.pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.pattern-btn {
+  aspect-ratio: 1;
+  background: var(--input-bg);
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+  position: relative;
+}
+
+.pattern-btn:hover { border-color: #555; }
+.pattern-btn.active { border-color: var(--accent); }
+
+.pattern-btn canvas { width: 100%; height: 100%; border-radius: 2px; }
+
+.pattern-btn .tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #eee;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.pattern-btn:hover .tooltip { display: block; }
+
+/* Controls */
+.control { margin-bottom: 10px; }
+.control label { display: block; margin-bottom: 4px; color: var(--text-dim); font-size: 11px; }
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control input[type="range"] {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #444;
+  border-radius: 2px;
+  outline: none;
+}
+
+.control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+}
+
+.control input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+}
+
+.control .val {
+  width: 36px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text);
+  font-family: inherit;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-row input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.color-row input[type="color"]::-webkit-color-swatch { border: none; border-radius: 2px; }
+
+.color-row span { font-size: 11px; color: var(--text-dim); flex: 1; }
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.checkbox-row input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+}
+
+.checkbox-row label { color: var(--text-dim); font-size: 11px; margin: 0; }
+
+/* Tile size toggles */
+.size-toggles {
+  display: flex;
+  gap: 4px;
+}
+
+.size-btn {
+  flex: 1;
+  padding: 5px 0;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+
+.size-btn:hover { border-color: #555; color: var(--text); }
+.size-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(90,143,255,0.1); }
+
+/* Memphis color swatches */
+.memphis-colors { display: none; }
+.memphis-colors.visible { display: block; }
+
+.swatch-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.swatch-row input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.swatch-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.swatch-row input[type="color"]::-webkit-color-swatch { border: none; border-radius: 2px; }
+
+/* Download */
+.download-section { padding: 12px 16px; margin-top: auto; }
+
+.dl-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dl-btn:hover { background: #4a7aee; }
+
+.copy-css-btn {
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.copy-css-btn:hover { border-color: #555; color: var(--text); }
+
+/* ── Preview ── */
+.preview-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Transparency checkerboard */
+.preview-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(-45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2a2a2a 75%),
+    linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  z-index: 0;
+}
+
+.preview {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  background-position: 0 0;
+  z-index: 1;
+  image-rendering: pixelated;
+}
+
+/* Hidden canvas */
+#tile-canvas { display: none; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">Pattern Generator</div>
+
+  <div class="section">
+    <div class="section-label">Pattern</div>
+    <div class="pattern-grid" id="pattern-grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Tile Size</div>
+    <div class="size-toggles" id="size-toggles">
+      <button class="size-btn" data-size="32">32</button>
+      <button class="size-btn active" data-size="64">64</button>
+      <button class="size-btn" data-size="128">128</button>
+      <button class="size-btn" data-size="256">256</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Controls</div>
+
+    <div class="control">
+      <label>Density</label>
+      <div class="control-row">
+        <input type="range" id="density" min="1" max="100" value="50">
+        <input type="text" class="val" id="density-val" value="50">
+      </div>
+    </div>
+
+    <div class="control">
+      <label>Stroke</label>
+      <div class="control-row">
+        <input type="range" id="stroke" min="1" max="60" value="15">
+        <input type="text" class="val" id="stroke-val" value="1.5">
+      </div>
+    </div>
+
+    <div class="control">
+      <div class="color-row">
+        <input type="color" id="fg-color" value="#ffffff">
+        <span>Foreground</span>
+      </div>
+    </div>
+
+    <div class="control">
+      <div class="color-row">
+        <input type="color" id="bg-color" value="#000000">
+        <span>Background</span>
+      </div>
+    </div>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="transparent-bg">
+      <label for="transparent-bg">Transparent background</label>
+    </div>
+  </div>
+
+  <div class="section memphis-colors" id="memphis-section">
+    <div class="section-label">Memphis Colors</div>
+    <div class="swatch-row">
+      <input type="color" id="memphis-c1" value="#ff6b6b">
+      <input type="color" id="memphis-c2" value="#4ecdc4">
+      <input type="color" id="memphis-c3" value="#ffe66d">
+      <input type="color" id="memphis-c4" value="#a78bfa">
+    </div>
+  </div>
+
+  <div class="download-section">
+    <button class="dl-btn" id="download-btn">Download PNG</button>
+    <button class="copy-css-btn" id="copy-css-btn">Copy CSS</button>
+  </div>
+</div>
+
+<div class="preview-wrap">
+  <div class="preview" id="preview"></div>
+</div>
+
+<canvas id="tile-canvas"></canvas>
+
+<script>
+// ── Seeded PRNG (mulberry32) ──
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ── Hex to RGBA helper ──
+function hexToRGBA(hex, alpha) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ── Pattern Registry ──
+const patterns = [
+  // Classic
+  { id: 'dots-grid', name: 'Dots (Grid)', category: 'classic', draw: drawDotsGrid },
+  { id: 'dots-stagger', name: 'Dots (Staggered)', category: 'classic', draw: drawDotsStagger },
+  { id: 'h-lines', name: 'Horizontal Lines', category: 'classic', draw: drawHLines },
+  { id: 'v-lines', name: 'Vertical Lines', category: 'classic', draw: drawVLines },
+  { id: 'diag-lines', name: 'Diagonal Lines', category: 'classic', draw: drawDiagLines },
+  { id: 'crosshatch', name: 'Crosshatch', category: 'classic', draw: drawCrosshatch },
+  { id: 'checkerboard', name: 'Checkerboard', category: 'classic', draw: drawCheckerboard },
+  { id: 'grid', name: 'Grid', category: 'classic', draw: drawGrid },
+  // Memphis
+  { id: 'confetti', name: 'Confetti', category: 'memphis', draw: drawConfetti },
+  { id: 'squiggles', name: 'Squiggles', category: 'memphis', draw: drawSquiggles },
+  { id: 'terrazzo', name: 'Terrazzo', category: 'memphis', draw: drawTerrazzo },
+];
+
+// ── State ──
+let state = {
+  pattern: 'dots-grid',
+  size: 64,
+  density: 50,
+  stroke: 1.5,
+  fg: '#ffffff',
+  bg: '#000000',
+  transparentBg: false,
+  memphisColors: ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a78bfa'],
+};
+
+// ── DOM refs ──
+const canvas = document.getElementById('tile-canvas');
+const ctx = canvas.getContext('2d');
+const preview = document.getElementById('preview');
+const patternGrid = document.getElementById('pattern-grid');
+
+// ── Build pattern selector grid ──
+function buildPatternGrid() {
+  patterns.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'pattern-btn' + (p.id === state.pattern ? ' active' : '');
+    btn.dataset.id = p.id;
+
+    const tooltip = document.createElement('span');
+    tooltip.className = 'tooltip';
+    tooltip.textContent = p.name;
+    btn.appendChild(tooltip);
+
+    // Mini preview canvas
+    const mini = document.createElement('canvas');
+    mini.width = 32;
+    mini.height = 32;
+    btn.appendChild(mini);
+
+    btn.addEventListener('click', () => {
+      state.pattern = p.id;
+      document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateMemphisVisibility();
+      render();
+    });
+
+    patternGrid.appendChild(btn);
+  });
+  renderMiniPreviews();
+}
+
+function renderMiniPreviews() {
+  patterns.forEach((p, i) => {
+    const mini = patternGrid.children[i].querySelector('canvas');
+    const mctx = mini.getContext('2d');
+    mctx.clearRect(0, 0, 32, 32);
+    mctx.fillStyle = '#1a1a1a';
+    mctx.fillRect(0, 0, 32, 32);
+    p.draw(mctx, 32, 32, {
+      density: 50, stroke: 1.5, fg: '#aaa', bg: '#1a1a1a',
+      transparentBg: false,
+      memphisColors: ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a78bfa'],
+    });
+  });
+}
+
+// ── Size toggles ──
+document.querySelectorAll('.size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.size = parseInt(btn.dataset.size);
+    render();
+  });
+});
+
+// ── Slider bindings ──
+function bindSlider(sliderId, valId, stateKey, transform, displayTransform) {
+  const slider = document.getElementById(sliderId);
+  const val = document.getElementById(valId);
+  slider.addEventListener('input', () => {
+    state[stateKey] = transform(parseInt(slider.value));
+    val.value = displayTransform ? displayTransform(state[stateKey]) : state[stateKey];
+    render();
+  });
+  val.addEventListener('change', () => {
+    const v = parseFloat(val.value);
+    if (!isNaN(v)) {
+      state[stateKey] = v;
+      // reverse transform to get slider position
+      slider.value = stateKey === 'stroke' ? Math.round(v * 10) : v;
+      render();
+    }
+  });
+}
+
+bindSlider('density', 'density-val', 'density', v => v, v => v);
+bindSlider('stroke', 'stroke-val', 'stroke', v => v / 10, v => v.toFixed(1));
+
+// ── Color bindings ──
+document.getElementById('fg-color').addEventListener('input', e => { state.fg = e.target.value; render(); });
+document.getElementById('bg-color').addEventListener('input', e => { state.bg = e.target.value; render(); });
+document.getElementById('transparent-bg').addEventListener('change', e => { state.transparentBg = e.target.checked; render(); });
+
+// Memphis color swatches
+['memphis-c1','memphis-c2','memphis-c3','memphis-c4'].forEach((id, i) => {
+  document.getElementById(id).addEventListener('input', e => {
+    state.memphisColors[i] = e.target.value;
+    render();
+  });
+});
+
+function updateMemphisVisibility() {
+  const p = patterns.find(p => p.id === state.pattern);
+  document.getElementById('memphis-section').classList.toggle('visible', p && p.category === 'memphis');
+}
+
+// ── Download ──
+document.getElementById('download-btn').addEventListener('click', () => {
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pattern-${state.pattern}-${state.size}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+});
+
+// ── Copy CSS ──
+document.getElementById('copy-css-btn').addEventListener('click', () => {
+  const dataUrl = canvas.toDataURL('image/png');
+  const css = `background-image: url(${dataUrl});\nbackground-repeat: repeat;`;
+  navigator.clipboard.writeText(css).then(() => {
+    const btn = document.getElementById('copy-css-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy CSS', 1500);
+  });
+});
+
+// ── Main render ──
+let rafId = null;
+function render() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(_render);
+}
+
+function _render() {
+  const w = state.size, h = state.size;
+  canvas.width = w;
+  canvas.height = h;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (!state.transparentBg) {
+    ctx.fillStyle = state.bg;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  const p = patterns.find(p => p.id === state.pattern);
+  if (p) p.draw(ctx, w, h, state);
+
+  // Update preview tiling
+  const dataUrl = canvas.toDataURL('image/png');
+  preview.style.backgroundImage = `url(${dataUrl})`;
+  preview.style.backgroundSize = `${w}px ${h}px`;
+}
+
+// ── Pattern Drawing Functions ──
+// All patterns use modulo / wrapping to ensure perfect seamlessness.
+
+function drawDotsGrid(ctx, w, h, params) {
+  // Spacing derived from density: high density = small spacing
+  const spacing = Math.max(4, Math.round(w * (1.1 - params.density / 100)));
+  const radius = Math.max(0.5, params.stroke);
+
+  ctx.fillStyle = params.fg;
+
+  const cols = Math.ceil(w / spacing) + 1;
+  const rows = Math.ceil(h / spacing) + 1;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = (c * spacing) % w;
+      const y = (r * spacing) % h;
+
+      // Draw at all 9 offsets for seamless wrapping
+      for (let ox = -1; ox <= 1; ox++) {
+        for (let oy = -1; oy <= 1; oy++) {
+          const dx = x + ox * w;
+          const dy = y + oy * h;
+          if (dx + radius >= 0 && dx - radius <= w && dy + radius >= 0 && dy - radius <= h) {
+            ctx.beginPath();
+            ctx.arc(dx, dy, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+    }
+  }
+}
+
+function drawDotsStagger(ctx, w, h, params) {
+  const spacing = Math.max(4, Math.round(w * (1.1 - params.density / 100)));
+  const radius = Math.max(0.5, params.stroke);
+
+  ctx.fillStyle = params.fg;
+
+  const cols = Math.ceil(w / spacing) + 2;
+  const rowH = spacing * Math.sqrt(3) / 2;
+  const rows = Math.ceil(h / rowH) + 2;
+
+  for (let r = 0; r < rows; r++) {
+    const stagger = (r % 2) * (spacing / 2);
+    for (let c = 0; c < cols; c++) {
+      const x = ((c * spacing + stagger) % w + w) % w;
+      const y = ((r * rowH) % h + h) % h;
+
+      for (let ox = -1; ox <= 1; ox++) {
+        for (let oy = -1; oy <= 1; oy++) {
+          const dx = x + ox * w;
+          const dy = y + oy * h;
+          if (dx + radius >= 0 && dx - radius <= w && dy + radius >= 0 && dy - radius <= h) {
+            ctx.beginPath();
+            ctx.arc(dx, dy, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+    }
+  }
+}
+
+function drawHLines(ctx, w, h, params) {
+  const spacing = Math.max(3, Math.round(h * (1.1 - params.density / 100)));
+  const lw = Math.max(0.5, params.stroke);
+
+  ctx.strokeStyle = params.fg;
+  ctx.lineWidth = lw;
+
+  const count = Math.ceil(h / spacing) + 1;
+  for (let i = 0; i < count; i++) {
+    const y = (i * spacing) % h;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+}
+
+function drawVLines(ctx, w, h, params) {
+  const spacing = Math.max(3, Math.round(w * (1.1 - params.density / 100)));
+  const lw = Math.max(0.5, params.stroke);
+
+  ctx.strokeStyle = params.fg;
+  ctx.lineWidth = lw;
+
+  const count = Math.ceil(w / spacing) + 1;
+  for (let i = 0; i < count; i++) {
+    const x = (i * spacing) % w;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+}
+
+function drawDiagLines(ctx, w, h, params) {
+  const spacing = Math.max(3, Math.round(Math.min(w, h) * (1.1 - params.density / 100)));
+  const lw = Math.max(0.5, params.stroke);
+
+  ctx.strokeStyle = params.fg;
+  ctx.lineWidth = lw;
+
+  // Diagonal lines at 45° that tile seamlessly.
+  // Draw lines from top-left to bottom-right, spaced along the perpendicular.
+  const diag = w + h;
+  const count = Math.ceil(diag / spacing) + 2;
+
+  for (let i = -count; i <= count; i++) {
+    const offset = i * spacing;
+    ctx.beginPath();
+    ctx.moveTo(offset, 0);
+    ctx.lineTo(offset + h, h);
+    ctx.stroke();
+  }
+}
+
+function drawCrosshatch(ctx, w, h, params) {
+  const spacing = Math.max(3, Math.round(Math.min(w, h) * (1.1 - params.density / 100)));
+  const lw = Math.max(0.5, params.stroke);
+
+  ctx.strokeStyle = params.fg;
+  ctx.lineWidth = lw;
+
+  const diag = w + h;
+  const count = Math.ceil(diag / spacing) + 2;
+
+  // 45° lines
+  for (let i = -count; i <= count; i++) {
+    const offset = i * spacing;
+    ctx.beginPath();
+    ctx.moveTo(offset, 0);
+    ctx.lineTo(offset + h, h);
+    ctx.stroke();
+  }
+
+  // -45° lines
+  for (let i = -count; i <= count; i++) {
+    const offset = i * spacing;
+    ctx.beginPath();
+    ctx.moveTo(offset, 0);
+    ctx.lineTo(offset - h, h);
+    ctx.stroke();
+  }
+}
+
+function drawCheckerboard(ctx, w, h, params) {
+  // Density controls number of cells: 2–16 cells per row
+  const cells = Math.max(2, Math.round(2 + (params.density / 100) * 14));
+  // Make cells even for clean tiling
+  const cellsEven = cells % 2 === 0 ? cells : cells + 1;
+  const cellW = w / cellsEven;
+  const cellH = h / cellsEven;
+
+  ctx.fillStyle = params.fg;
+
+  for (let r = 0; r < cellsEven; r++) {
+    for (let c = 0; c < cellsEven; c++) {
+      if ((r + c) % 2 === 0) {
+        ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
+      }
+    }
+  }
+}
+
+function drawGrid(ctx, w, h, params) {
+  const spacing = Math.max(3, Math.round(Math.min(w, h) * (1.1 - params.density / 100)));
+  const lw = Math.max(0.5, params.stroke);
+
+  ctx.strokeStyle = params.fg;
+  ctx.lineWidth = lw;
+
+  // Vertical lines
+  const cols = Math.ceil(w / spacing) + 1;
+  for (let i = 0; i < cols; i++) {
+    const x = (i * spacing) % w;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+
+  // Horizontal lines
+  const rows = Math.ceil(h / spacing) + 1;
+  for (let i = 0; i < rows; i++) {
+    const y = (i * spacing) % h;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+}
+
+// ── Memphis Patterns ──
+// These use seeded PRNG and draw at all 9 offsets for seamless wrapping.
+
+function drawConfetti(ctx, w, h, params) {
+  const rng = mulberry32(42);
+  const count = Math.round(3 + (params.density / 100) * 50);
+  const colors = params.memphisColors || ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a78bfa'];
+  const sz = Math.max(2, params.stroke * 2);
+
+  for (let i = 0; i < count; i++) {
+    const x = rng() * w;
+    const y = rng() * h;
+    const shape = Math.floor(rng() * 3); // 0=triangle, 1=circle, 2=rect
+    const color = colors[Math.floor(rng() * colors.length)];
+    const angle = rng() * Math.PI * 2;
+
+    // Draw at all 9 offsets for seamless wrapping
+    for (let ox = -1; ox <= 1; ox++) {
+      for (let oy = -1; oy <= 1; oy++) {
+        const dx = x + ox * w;
+        const dy = y + oy * h;
+
+        // Skip if completely outside tile
+        if (dx + sz * 2 < 0 || dx - sz * 2 > w || dy + sz * 2 < 0 || dy - sz * 2 > h) continue;
+
+        ctx.save();
+        ctx.translate(dx, dy);
+        ctx.rotate(angle);
+        ctx.fillStyle = color;
+
+        if (shape === 0) {
+          // Triangle
+          ctx.beginPath();
+          ctx.moveTo(0, -sz);
+          ctx.lineTo(sz * 0.87, sz * 0.5);
+          ctx.lineTo(-sz * 0.87, sz * 0.5);
+          ctx.closePath();
+          ctx.fill();
+        } else if (shape === 1) {
+          // Circle
+          ctx.beginPath();
+          ctx.arc(0, 0, sz * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // Rectangle
+          ctx.fillRect(-sz * 0.3, -sz, sz * 0.6, sz * 2);
+        }
+
+        ctx.restore();
+      }
+    }
+  }
+}
+
+function drawSquiggles(ctx, w, h, params) {
+  const rng = mulberry32(77);
+  const count = Math.round(2 + (params.density / 100) * 20);
+  const colors = params.memphisColors || ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a78bfa'];
+  const lw = Math.max(0.5, params.stroke);
+
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  for (let i = 0; i < count; i++) {
+    const x = rng() * w;
+    const y = rng() * h;
+    const color = colors[Math.floor(rng() * colors.length)];
+    const angle = rng() * Math.PI * 2;
+    const segments = 4 + Math.floor(rng() * 4);
+    const amp = 3 + rng() * 6;
+    const segLen = 3 + rng() * 5;
+
+    // Build squiggle path points
+    const points = [];
+    for (let s = 0; s <= segments; s++) {
+      const sx = s * segLen;
+      const sy = Math.sin(s * Math.PI) * amp * (s % 2 === 0 ? 1 : -1);
+      points.push([sx, sy]);
+    }
+
+    // Draw at all 9 offsets
+    for (let ox = -1; ox <= 1; ox++) {
+      for (let oy = -1; oy <= 1; oy++) {
+        const dx = x + ox * w;
+        const dy = y + oy * h;
+
+        const totalLen = segments * segLen;
+        if (dx + totalLen < -10 || dx - totalLen > w + 10 || dy + amp * 2 < -10 || dy - amp * 2 > h + 10) continue;
+
+        ctx.save();
+        ctx.translate(dx, dy);
+        ctx.rotate(angle);
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+
+        for (let s = 0; s <= segments; s++) {
+          const px = points[s][0];
+          const py = points[s][1];
+          if (s === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+}
+
+function drawTerrazzo(ctx, w, h, params) {
+  const rng = mulberry32(123);
+  const count = Math.round(3 + (params.density / 100) * 35);
+  const colors = params.memphisColors || ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a78bfa'];
+  const sz = Math.max(3, params.stroke * 2.5);
+
+  for (let i = 0; i < count; i++) {
+    const x = rng() * w;
+    const y = rng() * h;
+    const color = colors[Math.floor(rng() * colors.length)];
+    const angle = rng() * Math.PI * 2;
+    const scaleX = 0.5 + rng() * 1;
+    const scaleY = 0.5 + rng() * 1;
+
+    // Irregular chip: random polygon with 4-6 vertices
+    const verts = 4 + Math.floor(rng() * 3);
+    const pts = [];
+    for (let v = 0; v < verts; v++) {
+      const a = (v / verts) * Math.PI * 2 + (rng() - 0.5) * 0.8;
+      const r = sz * (0.5 + rng() * 0.5);
+      pts.push([Math.cos(a) * r * scaleX, Math.sin(a) * r * scaleY]);
+    }
+
+    for (let ox = -1; ox <= 1; ox++) {
+      for (let oy = -1; oy <= 1; oy++) {
+        const dx = x + ox * w;
+        const dy = y + oy * h;
+
+        if (dx + sz * 2 < 0 || dx - sz * 2 > w || dy + sz * 2 < 0 || dy - sz * 2 > h) continue;
+
+        ctx.save();
+        ctx.translate(dx, dy);
+        ctx.rotate(angle);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let v = 1; v < pts.length; v++) {
+          ctx.lineTo(pts[v][0], pts[v][1]);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+}
+
+// ── Init ──
+buildPatternGrid();
+updateMemphisVisibility();
+render();
+</script>
+</body>
+</html>
