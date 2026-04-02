@@ -252,13 +252,10 @@ input[type=checkbox] {
         <option value="dots-staggered">Dots — Staggered</option>
         <option value="lines-h">Lines — Horizontal</option>
         <option value="lines-v">Lines — Vertical</option>
-        <option value="lines-diag">Lines — Diagonal ↘</option>
-        <option value="lines-diag-back">Lines — Diagonal ↗</option>
-        <option value="crosshatch">Crosshatch  +</option>
-        <option value="crosshatch-diag">Crosshatch  ×</option>
+        <option value="lines-diag">Lines — Diagonal</option>
+        <option value="crosshatch">Crosshatch</option>
         <option value="checkerboard">Checkerboard</option>
         <option value="grid">Grid</option>
-        <option value="waves">Waves</option>
       </optgroup>
       <optgroup label="Memphis">
         <option value="dashes">Dashes</option>
@@ -278,6 +275,10 @@ input[type=checkbox] {
     <div class="slider-row">
       <div class="slider-label"><span>Size</span><span id="stroke-val">80</span></div>
       <input type="range" id="stroke" min="1" max="100" value="80">
+    </div>
+    <div class="slider-row" id="seed-row" style="display:none">
+      <div class="slider-label"><span>Seed</span><span id="seed-val">0</span></div>
+      <input type="range" id="seed" min="0" max="99" value="0">
     </div>
   </div>
 
@@ -312,10 +313,12 @@ const state = {
   pattern: 'dots-grid',
   density: 30,
   stroke: 80,
+  seed: 0,
   fg: '#000000',
   bg: '#ffffff',
   transparentBg: false,
 };
+const MEMPHIS_PATTERNS = new Set(['dashes', 'zigzag', 'arcs']);
 
 // ── Helpers ──
 function sf(s)         { return s.stroke / 100; }
@@ -404,23 +407,6 @@ function renderLinesDiag(ctx, size, s) {
   }
 }
 
-// Diagonal ↗  (x + y) mod size
-function renderLinesDiagBack(ctx, size, s) {
-  const n = elCount(s), sp = size / n;
-  const lw = Math.max(1, sp * sf(s));
-  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
-  ctx.fillStyle = s.fg;
-  for (let i = -n; i <= n; i++) {
-    const x0 = i * sp;
-    ctx.beginPath();
-    ctx.moveTo(x0,           0);
-    ctx.lineTo(x0 + lw,      0);
-    ctx.lineTo(x0 + lw - size, size);
-    ctx.lineTo(x0 - size,    size);
-    ctx.closePath();
-    ctx.fill();
-  }
-}
 
 function renderCrosshatch(ctx, size, s) {
   const n = elCount(s), sp = size / n;
@@ -434,25 +420,6 @@ function renderCrosshatch(ctx, size, s) {
   }
 }
 
-function renderCrosshatchDiag(ctx, size, s) {
-  const n = elCount(s), sp = size / n;
-  const lw = Math.max(1, sp * sf(s));
-  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
-  ctx.fillStyle = s.fg;
-  for (let i = -n; i <= n; i++) {
-    const x0 = i * sp;
-    // ↘
-    ctx.beginPath();
-    ctx.moveTo(x0, 0); ctx.lineTo(x0 + lw, 0);
-    ctx.lineTo(x0 + lw + size, size); ctx.lineTo(x0 + size, size);
-    ctx.closePath(); ctx.fill();
-    // ↗
-    ctx.beginPath();
-    ctx.moveTo(x0, 0); ctx.lineTo(x0 + lw, 0);
-    ctx.lineTo(x0 + lw - size, size); ctx.lineTo(x0 - size, size);
-    ctx.closePath(); ctx.fill();
-  }
-}
 
 function renderCheckerboard(ctx, size, s) {
   const n = elCountEven(s), sp = size / n;
@@ -474,30 +441,6 @@ function renderGrid(ctx, size, s) {
   }
 }
 
-function renderWaves(ctx, size, s) {
-  // n rows; cycles = n sine waves per row width → always integer → horizontally seamless.
-  // Row spacing = size/n → vertically seamless (centers equidistant including wrap).
-  const n = elCount(s), sp = size / n;
-  const lw = Math.max(1, sp * sf(s));
-  const amp = sp * 0.28;
-  const cycles = n;
-  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
-  ctx.strokeStyle = s.fg;
-  ctx.lineWidth = lw;
-  ctx.lineCap = 'butt';
-  ctx.lineJoin = 'round';
-  const TAU = 2 * Math.PI;
-  for (let row = 0; row < n; row++) {
-    const cy = row * sp + sp / 2;
-    ctx.beginPath();
-    // Start 2px before x=0 so butt cap falls outside the visible area
-    ctx.moveTo(-2, cy + amp * Math.sin(TAU * (-2) * cycles / size));
-    for (let x = 0; x <= size + 1; x++) {
-      ctx.lineTo(x, cy + amp * Math.sin(TAU * x * cycles / size));
-    }
-    ctx.stroke();
-  }
-}
 
 // ── Memphis Patterns ──
 
@@ -510,7 +453,7 @@ function renderDashes(ctx, size, s) {
   ctx.strokeStyle = s.fg;
   ctx.lineWidth = strokeW;
   ctx.lineCap = 'round';
-  const rng = makePRNG(42);
+  const rng = makePRNG(s.seed * 997 + 42);
   const items = Array.from({length: count}, () =>
     ({ x: rng() * size, y: rng() * size, a: rng() * Math.PI }));
   for (const d of items) {
@@ -558,7 +501,7 @@ function renderArcs(ctx, size, s) {
   ctx.strokeStyle = s.fg;
   ctx.lineWidth = strokeW;
   ctx.lineCap = 'round';
-  const rng = makePRNG(13);
+  const rng = makePRNG(s.seed * 997 + 13);
   const items = Array.from({length: count}, () => ({
     x: rng() * size, y: rng() * size,
     rot: Math.floor(rng() * 4) * (Math.PI / 2),
@@ -578,20 +521,17 @@ function renderArcs(ctx, size, s) {
 }
 
 const RENDERERS = {
-  'dots-grid':        renderDotsGrid,
-  'dots-staggered':   renderDotsStaggered,
-  'lines-h':          renderLinesH,
-  'lines-v':          renderLinesV,
-  'lines-diag':       renderLinesDiag,
-  'lines-diag-back':  renderLinesDiagBack,
-  'crosshatch':       renderCrosshatch,
-  'crosshatch-diag':  renderCrosshatchDiag,
-  'checkerboard':     renderCheckerboard,
-  'grid':             renderGrid,
-  'waves':            renderWaves,
-  'dashes':           renderDashes,
-  'zigzag':           renderZigzag,
-  'arcs':             renderArcs,
+  'dots-grid':       renderDotsGrid,
+  'dots-staggered':  renderDotsStaggered,
+  'lines-h':         renderLinesH,
+  'lines-v':         renderLinesV,
+  'lines-diag':      renderLinesDiag,
+  'crosshatch':      renderCrosshatch,
+  'checkerboard':    renderCheckerboard,
+  'grid':            renderGrid,
+  'dashes':          renderDashes,
+  'zigzag':          renderZigzag,
+  'arcs':            renderArcs,
 };
 
 // ── Render pipeline ──
@@ -623,8 +563,13 @@ function updatePreview() {
 }
 
 // ── UI wiring ──
+function syncSeedVisibility() {
+  document.getElementById('seed-row').style.display =
+    MEMPHIS_PATTERNS.has(state.pattern) ? '' : 'none';
+}
+
 document.getElementById('pattern-select').addEventListener('change', e => {
-  state.pattern = e.target.value; updatePreview();
+  state.pattern = e.target.value; syncSeedVisibility(); updatePreview();
 });
 document.getElementById('density').addEventListener('input', e => {
   state.density = +e.target.value;
@@ -634,6 +579,11 @@ document.getElementById('density').addEventListener('input', e => {
 document.getElementById('stroke').addEventListener('input', e => {
   state.stroke = +e.target.value;
   document.getElementById('stroke-val').textContent = state.stroke;
+  updatePreview();
+});
+document.getElementById('seed').addEventListener('input', e => {
+  state.seed = +e.target.value;
+  document.getElementById('seed-val').textContent = state.seed;
   updatePreview();
 });
 document.getElementById('fg-color').addEventListener('input', e => { state.fg = e.target.value; updatePreview(); });
@@ -663,6 +613,7 @@ document.getElementById('download-jpg').addEventListener('click', () => {
 });
 
 // ── Init ──
+syncSeedVisibility();
 updatePreview();
 </script>
 </body>
