@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Palette — Gizmos</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg-surface: #1a1d27;
+      --border: #2e3348;
+      --text: #e4e6f0;
+      --text-dim: #8b90a8;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .back-link {
+      display: inline-block;
+      margin: 16px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 14px;
+      padding: 6px 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .back-link:hover { color: var(--text); border-color: #6c8aff; }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+    .desc { color: var(--text-dim); font-size: 14px; margin-top: 6px; }
+    .palette {
+      display: flex;
+      gap: 8px;
+      margin: 32px 0 24px;
+      height: 180px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .swatch {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 12px;
+      cursor: pointer;
+      transition: flex 0.2s;
+      position: relative;
+    }
+    .swatch:hover { flex: 1.4; }
+    .swatch-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: rgba(255,255,255,0.85);
+      background: rgba(0,0,0,0.35);
+      padding: 3px 8px;
+      border-radius: 4px;
+      backdrop-filter: blur(4px);
+    }
+    .copied {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .copied.show { opacity: 1; }
+    .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    button {
+      font-family: var(--font);
+      font-size: 14px;
+      padding: 10px 24px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    button:hover {
+      background: rgba(108, 138, 255, 0.15);
+      border-color: #6c8aff;
+    }
+    select {
+      font-family: var(--font);
+      font-size: 14px;
+      padding: 10px 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      cursor: pointer;
+      appearance: none;
+    }
+    @media (max-width: 480px) {
+      .palette { height: 140px; }
+    }
+  </style>
+</head>
+<body>
+  <a href="../../index.html" class="back-link">&larr; Gizmos</a>
+  <div class="container">
+    <h1>Color Palette</h1>
+    <p class="desc">Generate harmonious color palettes. Click a swatch to copy its hex value.</p>
+
+    <div class="palette" id="palette"></div>
+
+    <div class="actions">
+      <select id="harmony">
+        <option value="analogous">Analogous</option>
+        <option value="complementary">Complementary</option>
+        <option value="triadic">Triadic</option>
+        <option value="random">Random</option>
+      </select>
+      <button id="generate">Generate</button>
+    </div>
+  </div>
+
+  <div class="copied" id="copied">Copied!</div>
+
+  <script>
+    const paletteEl = document.getElementById('palette');
+    const copiedEl = document.getElementById('copied');
+    const harmonyEl = document.getElementById('harmony');
+    const generateBtn = document.getElementById('generate');
+
+    function hslToHex(h, s, l) {
+      h = ((h % 360) + 360) % 360;
+      s /= 100; l /= 100;
+      const a = s * Math.min(l, 1 - l);
+      const f = (n) => {
+        const k = (n + h / 30) % 12;
+        const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+        return Math.round(255 * color).toString(16).padStart(2, '0');
+      };
+      return `#${f(0)}${f(8)}${f(4)}`;
+    }
+
+    function generatePalette() {
+      const mode = harmonyEl.value;
+      const baseHue = Math.random() * 360;
+      const baseSat = 55 + Math.random() * 30;
+      const baseLit = 45 + Math.random() * 20;
+      let hues;
+
+      switch (mode) {
+        case 'analogous':
+          hues = [-30, -15, 0, 15, 30].map(d => baseHue + d);
+          break;
+        case 'complementary':
+          hues = [-10, 0, 10, 170, 180];
+          hues = hues.map(d => baseHue + d);
+          break;
+        case 'triadic':
+          hues = [0, 10, 120, 130, 240].map(d => baseHue + d);
+          break;
+        default:
+          hues = Array.from({ length: 5 }, () => Math.random() * 360);
+      }
+
+      paletteEl.innerHTML = '';
+      for (const hue of hues) {
+        const hex = hslToHex(hue, baseSat, baseLit);
+        const swatch = document.createElement('div');
+        swatch.className = 'swatch';
+        swatch.style.background = hex;
+        swatch.innerHTML = `<span class="swatch-label">${hex}</span>`;
+        swatch.addEventListener('click', () => copyColor(hex));
+        paletteEl.appendChild(swatch);
+      }
+    }
+
+    function copyColor(hex) {
+      navigator.clipboard.writeText(hex).then(() => {
+        copiedEl.textContent = `Copied ${hex}`;
+        copiedEl.classList.add('show');
+        setTimeout(() => copiedEl.classList.remove('show'), 1200);
+      });
+    }
+
+    generateBtn.addEventListener('click', generatePalette);
+    harmonyEl.addEventListener('change', generatePalette);
+    generatePalette();
+  </script>
+</body>
+</html>
