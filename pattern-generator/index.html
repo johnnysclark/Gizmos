@@ -256,6 +256,9 @@ input[type=checkbox] {
         <option value="crosshatch">Crosshatch</option>
         <option value="checkerboard">Checkerboard</option>
         <option value="grid">Grid</option>
+        <option value="triangles">Triangles</option>
+        <option value="diamonds">Diamonds</option>
+        <option value="crosses">Crosses</option>
       </optgroup>
       <optgroup label="Memphis">
         <option value="dashes">Dashes</option>
@@ -442,25 +445,88 @@ function renderGrid(ctx, size, s) {
 }
 
 
+// ── Classic geometric extras ──
+
+function renderTriangles(ctx, size, s) {
+  // Alternating up/down triangles in a grid
+  const n = elCount(s), sp = size / n;
+  const ts = sp * Math.min(1, sf(s) * 1.1);
+  const off = (sp - ts) / 2;
+  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
+  ctx.fillStyle = s.fg;
+  for (let row = 0; row < n; row++) {
+    for (let col = 0; col < n; col++) {
+      const x = col * sp + off, y = row * sp + off;
+      ctx.beginPath();
+      if ((row + col) % 2 === 0) {
+        ctx.moveTo(x + ts / 2, y); ctx.lineTo(x + ts, y + ts); ctx.lineTo(x, y + ts);
+      } else {
+        ctx.moveTo(x, y); ctx.lineTo(x + ts, y); ctx.lineTo(x + ts / 2, y + ts);
+      }
+      ctx.closePath(); ctx.fill();
+    }
+  }
+}
+
+function renderDiamonds(ctx, size, s) {
+  // Grid of filled diamond shapes
+  const n = elCount(s), sp = size / n;
+  const r = sp * 0.5 * sf(s);
+  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
+  ctx.fillStyle = s.fg;
+  for (let row = 0; row < n; row++) {
+    for (let col = 0; col < n; col++) {
+      const cx = col * sp + sp / 2, cy = row * sp + sp / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy);
+      ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+}
+
+function renderCrosses(ctx, size, s) {
+  // Grid of + cross marks
+  const n = elCount(s), sp = size / n;
+  const arm   = sp * 0.44 * sf(s);
+  const thick = Math.max(1, arm * 0.42);
+  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
+  ctx.fillStyle = s.fg;
+  for (let row = 0; row < n; row++) {
+    for (let col = 0; col < n; col++) {
+      const cx = col * sp + sp / 2, cy = row * sp + sp / 2;
+      ctx.fillRect(cx - arm, cy - thick / 2, arm * 2, thick);
+      ctx.fillRect(cx - thick / 2, cy - arm, thick, arm * 2);
+    }
+  }
+}
+
 // ── Memphis Patterns ──
 
 function renderDashes(ctx, size, s) {
-  const density = s.density / 100;
-  const count   = Math.round(15 + density * 130);
-  const dashLen = size * (0.03 + sf(s) * 0.09);
-  const strokeW = Math.max(2, dashLen * 0.28);
+  // One dash per grid cell, random position & angle snapped to 0/45/90/135°
+  const n = elCount(s), sp = size / n;
+  const dashLen = sp * (0.3 + sf(s) * 0.45);
+  const strokeW = Math.max(2, sp * (0.08 + sf(s) * 0.12));
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.strokeStyle = s.fg;
   ctx.lineWidth = strokeW;
   ctx.lineCap = 'round';
+  const angles = [0, Math.PI / 4, Math.PI / 2, Math.PI * 3 / 4];
   const rng = makePRNG(s.seed * 997 + 42);
-  const items = Array.from({length: count}, () =>
-    ({ x: rng() * size, y: rng() * size, a: rng() * Math.PI }));
+  const items = [];
+  for (let row = 0; row < n; row++)
+    for (let col = 0; col < n; col++)
+      items.push({
+        x: col * sp + rng() * sp,
+        y: row * sp + rng() * sp,
+        a: angles[Math.floor(rng() * 4)],
+      });
   for (const d of items) {
+    const ex = Math.cos(d.a) * dashLen / 2, ey = Math.sin(d.a) * dashLen / 2;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       const cx = d.x + dx * size, cy = d.y + dy * size;
       if (cx + dashLen < 0 || cx - dashLen > size || cy + dashLen < 0 || cy - dashLen > size) continue;
-      const ex = Math.cos(d.a) * dashLen / 2, ey = Math.sin(d.a) * dashLen / 2;
       ctx.beginPath();
       ctx.moveTo(cx - ex, cy - ey); ctx.lineTo(cx + ex, cy + ey);
       ctx.stroke();
@@ -469,21 +535,22 @@ function renderDashes(ctx, size, s) {
 }
 
 function renderZigzag(ctx, size, s) {
+  // n rows; teeth = n per row so tooth aspect ratio stays ~square.
+  // 2*n half-periods is always even → seamless horizontal join.
   const n = elCount(s), sp = size / n;
-  const amp  = sp * 0.32;
   const lw   = Math.max(1, sp * sf(s));
-  // Even zigZ half-periods → same start/end y → seamless horizontal join
-  const zigZ = 2 * Math.max(2, Math.round(1 + (s.density / 100) * 7));
-  const halfP = size / zigZ;
+  const amp  = sp * 0.42;
+  const halfP = sp / 2; // = size / (2*n)
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.strokeStyle = s.fg;
   ctx.lineWidth = lw;
   ctx.lineJoin = 'miter';
+  ctx.miterLimit = 6;
   ctx.lineCap = 'butt';
   for (let row = 0; row < n; row++) {
     const cy = row * sp + sp / 2;
     ctx.beginPath();
-    for (let k = -1; k <= zigZ + 1; k++) {
+    for (let k = -1; k <= 2 * n + 1; k++) {
       const x = k * halfP;
       const y = cy + (k % 2 === 0 ? -amp : amp);
       k === -1 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
@@ -493,45 +560,42 @@ function renderZigzag(ctx, size, s) {
 }
 
 function renderArcs(ctx, size, s) {
-  const density = s.density / 100;
-  const count   = Math.round(10 + density * 65);
-  const arcR    = size * (0.02 + sf(s) * 0.06);
-  const strokeW = Math.max(2, arcR * 0.42);
+  // Fish scale: staggered rows of semicircles, structured grid → always seamless
+  const n = elCountEven(s), sp = size / n;
+  const r  = sp * 0.58;
+  const lw = Math.max(2, sp * sf(s) * 0.3);
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.strokeStyle = s.fg;
-  ctx.lineWidth = strokeW;
+  ctx.lineWidth = lw;
   ctx.lineCap = 'round';
-  const rng = makePRNG(s.seed * 997 + 13);
-  const items = Array.from({length: count}, () => ({
-    x: rng() * size, y: rng() * size,
-    rot: Math.floor(rng() * 4) * (Math.PI / 2),
-  }));
-  const pad = arcR + strokeW;
-  for (const arc of items) {
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const cx = arc.x + dx * size, cy = arc.y + dy * size;
-      if (cx + pad < 0 || cx - pad > size || cy + pad < 0 || cy - pad > size) continue;
-      ctx.save();
-      ctx.translate(cx, cy); ctx.rotate(arc.rot);
-      ctx.beginPath(); ctx.arc(0, 0, arcR, 0, Math.PI);
+  for (let row = -1; row <= n; row++) {
+    const cy  = row * sp;
+    const xOff = ((row % 2) + 2) % 2 * (sp / 2);
+    for (let col = -1; col <= n; col++) {
+      const cx = col * sp + xOff + sp / 2;
+      if (cx + r < 0 || cx - r > size || cy + r < 0 || cy - r > size) continue;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI);
       ctx.stroke();
-      ctx.restore();
     }
   }
 }
 
 const RENDERERS = {
-  'dots-grid':       renderDotsGrid,
-  'dots-staggered':  renderDotsStaggered,
-  'lines-h':         renderLinesH,
-  'lines-v':         renderLinesV,
-  'lines-diag':      renderLinesDiag,
-  'crosshatch':      renderCrosshatch,
-  'checkerboard':    renderCheckerboard,
-  'grid':            renderGrid,
-  'dashes':          renderDashes,
-  'zigzag':          renderZigzag,
-  'arcs':            renderArcs,
+  'dots-grid':      renderDotsGrid,
+  'dots-staggered': renderDotsStaggered,
+  'lines-h':        renderLinesH,
+  'lines-v':        renderLinesV,
+  'lines-diag':     renderLinesDiag,
+  'crosshatch':     renderCrosshatch,
+  'checkerboard':   renderCheckerboard,
+  'grid':           renderGrid,
+  'triangles':      renderTriangles,
+  'diamonds':       renderDiamonds,
+  'crosses':        renderCrosses,
+  'dashes':         renderDashes,
+  'zigzag':         renderZigzag,
+  'arcs':           renderArcs,
 };
 
 // ── Render pipeline ──
