@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Pattern Generator</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,26 +25,27 @@ body {
   display: flex;
   justify-content: center;
   min-height: 100vh;
+  padding: 20px 16px 48px;
   font-size: 12px;
-  padding: 24px 0;
 }
 
-/* ── Sidebar ── */
+/* ── Panel ── */
 #sidebar {
-  width: 320px;
+  width: 100%;
+  max-width: 400px;
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  padding: 18px 16px;
-  gap: 16px;
-  border-radius: 6px;
+  padding: 20px 18px;
+  gap: 18px;
+  border-radius: 10px;
   height: fit-content;
 }
 
 #sidebar h1 {
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text);
 }
@@ -54,8 +55,9 @@ body {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
+  border: 1px solid var(--border);
 }
 .preview-wrap::before {
   content: '';
@@ -66,8 +68,8 @@ body {
     linear-gradient(-45deg, #2c2c2c 25%, transparent 25%),
     linear-gradient(45deg, transparent 75%, #2c2c2c 75%),
     linear-gradient(-45deg, transparent 75%, #2c2c2c 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
   background-color: #222;
 }
 #sidebar-preview {
@@ -77,138 +79,160 @@ body {
   height: 100%;
 }
 
+/* ── Labels ── */
 .section-label {
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--text-dim);
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 
 .control-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
-/* Pattern select */
+/* ── Select ── */
 select {
   width: 100%;
   background: var(--surface2);
   border: 1px solid var(--border);
   color: var(--text);
   font-family: var(--font);
-  font-size: 12px;
-  padding: 8px 8px;
-  border-radius: 3px;
+  font-size: 16px; /* prevents iOS zoom-on-focus */
+  padding: 13px 10px;
+  border-radius: 5px;
   cursor: pointer;
   appearance: none;
+  -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 22px;
+  background-position: right 12px center;
+  padding-right: 30px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 select:focus { outline: none; border-color: var(--accent); }
 
-/* Sliders */
+/* ── Sliders ── */
 .slider-row {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 8px;
 }
 .slider-label {
   display: flex;
   justify-content: space-between;
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: 12px;
 }
-.slider-label span:last-child { color: var(--text); }
+.slider-label span:last-child { color: var(--text); font-weight: 600; }
 
 input[type=range] {
   width: 100%;
-  height: 4px;
+  height: 6px;
   -webkit-appearance: none;
   appearance: none;
   background: var(--border);
-  border-radius: 2px;
+  border-radius: 3px;
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--accent);
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
 input[type=range]::-moz-range-thumb {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--accent);
   border: none;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
 
-/* Color pickers */
+/* ── Color pickers ── */
 .color-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
-.color-row label { color: var(--text-dim); font-size: 11px; flex: 1; }
+.color-row label { color: var(--text-dim); font-size: 12px; flex: 1; }
 input[type=color] {
-  width: 40px;
-  height: 30px;
+  width: 52px;
+  height: 40px;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 5px;
   cursor: pointer;
   padding: 2px 3px;
   background: var(--surface2);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Checkbox */
+/* ── Checkbox ── */
 .check-row {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 10px;
   cursor: pointer;
+  padding: 4px 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
-.check-row label { color: var(--text-dim); font-size: 11px; cursor: pointer; }
-input[type=checkbox] { accent-color: var(--accent); cursor: pointer; width: 16px; height: 16px; }
+.check-row label { color: var(--text-dim); font-size: 12px; cursor: pointer; }
+input[type=checkbox] {
+  accent-color: var(--accent);
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
 
-/* Divider */
+/* ── Divider ── */
 .divider { height: 1px; background: var(--border); }
 
-/* Download buttons */
+/* ── Download buttons ── */
 .dl-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 #download-png, #download-jpg {
   background: var(--accent);
   color: #fff;
   border: none;
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  padding: 13px 0;
-  border-radius: 4px;
+  padding: 18px 0;
+  border-radius: 6px;
   cursor: pointer;
   width: 100%;
-  transition: opacity 0.15s;
+  min-height: 56px;
+  transition: opacity 0.12s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 #download-jpg {
   background: var(--surface2);
   border: 1px solid var(--border);
   color: var(--text-dim);
 }
-#download-png:hover { opacity: 0.85; }
-#download-jpg:hover { color: var(--text); }
+#download-png:hover, #download-png:active { opacity: 0.82; }
+#download-jpg:hover, #download-jpg:active { color: var(--text); border-color: #666; }
 </style>
 </head>
 <body>
@@ -224,13 +248,17 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; width: 16px
     <div class="section-label">Pattern</div>
     <select id="pattern-select">
       <optgroup label="Classic">
-        <option value="dots-grid" selected>Dots</option>
+        <option value="dots-grid" selected>Dots — Grid</option>
+        <option value="dots-staggered">Dots — Staggered</option>
         <option value="lines-h">Lines — Horizontal</option>
         <option value="lines-v">Lines — Vertical</option>
-        <option value="lines-diag">Lines — Diagonal 45°</option>
-        <option value="crosshatch">Crosshatch</option>
+        <option value="lines-diag">Lines — Diagonal ↘</option>
+        <option value="lines-diag-back">Lines — Diagonal ↗</option>
+        <option value="crosshatch">Crosshatch  +</option>
+        <option value="crosshatch-diag">Crosshatch  ×</option>
         <option value="checkerboard">Checkerboard</option>
         <option value="grid">Grid</option>
+        <option value="waves">Waves</option>
       </optgroup>
       <optgroup label="Memphis">
         <option value="dashes">Dashes</option>
@@ -249,7 +277,7 @@ input[type=checkbox] { accent-color: var(--accent); cursor: pointer; width: 16px
     </div>
     <div class="slider-row">
       <div class="slider-label"><span>Size</span><span id="stroke-val">80</span></div>
-      <input type="range" id="stroke" min="1" max="100" value="80" step="1">
+      <input type="range" id="stroke" min="1" max="100" value="80">
     </div>
   </div>
 
@@ -290,17 +318,14 @@ const state = {
 };
 
 // ── Helpers ──
-// size factor: stroke slider (1-100) → 0.01..1.0
-function sf(s) { return s.stroke / 100; }
-// element count from density (integer, 2–16)
-function elCount(s) { return Math.max(2, Math.round(2 + (s.density / 100) * 14)); }
-// even element count
-function elCountEven(s) { const n = elCount(s); return n % 2 === 0 ? n : n + 1; }
+function sf(s)         { return s.stroke / 100; }
+function elCount(s)    { return Math.max(2, Math.round(2 + (s.density / 100) * 14)); }
+function elCountEven(s){ const n = elCount(s); return n % 2 === 0 ? n : n + 1; }
 
 // ── PRNG (mulberry32) ──
 function makePRNG(seed) {
   let t = seed >>> 0;
-  return function() {
+  return () => {
     t += 0x6D2B79F5;
     let x = t;
     x = Math.imul(x ^ x >>> 15, x | 1);
@@ -310,27 +335,43 @@ function makePRNG(seed) {
 }
 
 // ── Pattern Renderers ──
-// All use: spacing = size / count (integer division) → perfect seamless tiling.
-// Line weight formula: lw = sp * sf(s) — consistent across all patterns.
 
 function renderDotsGrid(ctx, size, s) {
-  const n = elCount(s);
-  const sp = size / n;
+  const n = elCount(s), sp = size / n;
   const r = sp * 0.5 * sf(s);
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
-  for (let row = 0; row < n; row++) {
+  for (let row = 0; row < n; row++)
     for (let col = 0; col < n; col++) {
       ctx.beginPath();
       ctx.arc(col * sp + sp / 2, row * sp + sp / 2, r, 0, Math.PI * 2);
       ctx.fill();
     }
+}
+
+function renderDotsStaggered(ctx, size, s) {
+  // Hex/brick offset: odd rows shift right by sp/2. Even row count ensures seamless vertical tiling.
+  const n = elCountEven(s), sp = size / n;
+  const r = sp * 0.5 * sf(s);
+  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
+  ctx.fillStyle = s.fg;
+  for (let row = 0; row < n; row++) {
+    const offset = (row % 2) * (sp / 2);
+    const y = row * sp + sp / 2;
+    for (let col = 0; col < n; col++) {
+      const xBase = col * sp + offset + sp / 2;
+      // 3-offset horizontal wrap for staggered rows
+      for (let t = -1; t <= 1; t++) {
+        const x = xBase + t * size;
+        if (x + r <= 0 || x - r >= size) continue;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+    }
   }
 }
 
 function renderLinesH(ctx, size, s) {
-  const n = elCount(s);
-  const sp = size / n;
+  const n = elCount(s), sp = size / n;
   const lw = Math.max(1, sp * sf(s));
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
@@ -338,47 +379,83 @@ function renderLinesH(ctx, size, s) {
 }
 
 function renderLinesV(ctx, size, s) {
-  const n = elCount(s);
-  const sp = size / n;
+  const n = elCount(s), sp = size / n;
   const lw = Math.max(1, sp * sf(s));
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
   for (let i = 0; i < n; i++) ctx.fillRect(i * sp + (sp - lw) / 2, 0, lw, size);
 }
 
+// Diagonal ↘  (x - y) mod size: filled parallelograms, loop i -n..n covers all wrap pieces
 function renderLinesDiag(ctx, size, s) {
-  const n = elCount(s);
-  const sp = size / n;
+  const n = elCount(s), sp = size / n;
   const lw = Math.max(1, sp * sf(s));
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
-  ctx.strokeStyle = s.fg;
-  ctx.lineWidth = lw;
-  ctx.lineCap = 'butt';
-  for (let i = -1; i <= n + 1; i++) {
+  ctx.fillStyle = s.fg;
+  for (let i = -n; i <= n; i++) {
     const x0 = i * sp;
     ctx.beginPath();
-    ctx.moveTo(x0 - size, -size);
-    ctx.lineTo(x0 + 2 * size, 2 * size);
-    ctx.stroke();
+    ctx.moveTo(x0,          0);
+    ctx.lineTo(x0 + lw,     0);
+    ctx.lineTo(x0 + lw + size, size);
+    ctx.lineTo(x0 + size,   size);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+// Diagonal ↗  (x + y) mod size
+function renderLinesDiagBack(ctx, size, s) {
+  const n = elCount(s), sp = size / n;
+  const lw = Math.max(1, sp * sf(s));
+  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
+  ctx.fillStyle = s.fg;
+  for (let i = -n; i <= n; i++) {
+    const x0 = i * sp;
+    ctx.beginPath();
+    ctx.moveTo(x0,           0);
+    ctx.lineTo(x0 + lw,      0);
+    ctx.lineTo(x0 + lw - size, size);
+    ctx.lineTo(x0 - size,    size);
+    ctx.closePath();
+    ctx.fill();
   }
 }
 
 function renderCrosshatch(ctx, size, s) {
-  const n = elCount(s);
-  const sp = size / n;
+  const n = elCount(s), sp = size / n;
   const lw = Math.max(1, sp * sf(s));
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
   for (let i = 0; i < n; i++) {
     const pos = i * sp + (sp - lw) / 2;
-    ctx.fillRect(0, pos, size, lw);   // horizontal
-    ctx.fillRect(pos, 0, lw, size);   // vertical
+    ctx.fillRect(0, pos, size, lw);
+    ctx.fillRect(pos, 0, lw, size);
+  }
+}
+
+function renderCrosshatchDiag(ctx, size, s) {
+  const n = elCount(s), sp = size / n;
+  const lw = Math.max(1, sp * sf(s));
+  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
+  ctx.fillStyle = s.fg;
+  for (let i = -n; i <= n; i++) {
+    const x0 = i * sp;
+    // ↘
+    ctx.beginPath();
+    ctx.moveTo(x0, 0); ctx.lineTo(x0 + lw, 0);
+    ctx.lineTo(x0 + lw + size, size); ctx.lineTo(x0 + size, size);
+    ctx.closePath(); ctx.fill();
+    // ↗
+    ctx.beginPath();
+    ctx.moveTo(x0, 0); ctx.lineTo(x0 + lw, 0);
+    ctx.lineTo(x0 + lw - size, size); ctx.lineTo(x0 - size, size);
+    ctx.closePath(); ctx.fill();
   }
 }
 
 function renderCheckerboard(ctx, size, s) {
-  const n = elCountEven(s);
-  const sp = size / n;
+  const n = elCountEven(s), sp = size / n;
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
   for (let r = 0; r < n; r++)
@@ -387,15 +464,38 @@ function renderCheckerboard(ctx, size, s) {
 }
 
 function renderGrid(ctx, size, s) {
-  const n = elCount(s);
-  const sp = size / n;
+  const n = elCount(s), sp = size / n;
   const lw = Math.max(1, sp * sf(s));
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.fillStyle = s.fg;
   for (let i = 0; i < n; i++) {
-    const pos = i * sp;
-    ctx.fillRect(pos, 0, lw, size);   // vertical line at cell left edge
-    ctx.fillRect(0, pos, size, lw);   // horizontal line at cell top edge
+    ctx.fillRect(i * sp, 0, lw, size);
+    ctx.fillRect(0, i * sp, size, lw);
+  }
+}
+
+function renderWaves(ctx, size, s) {
+  // n rows; cycles = n sine waves per row width → always integer → horizontally seamless.
+  // Row spacing = size/n → vertically seamless (centers equidistant including wrap).
+  const n = elCount(s), sp = size / n;
+  const lw = Math.max(1, sp * sf(s));
+  const amp = sp * 0.28;
+  const cycles = n;
+  if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
+  ctx.strokeStyle = s.fg;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'butt';
+  ctx.lineJoin = 'round';
+  const TAU = 2 * Math.PI;
+  for (let row = 0; row < n; row++) {
+    const cy = row * sp + sp / 2;
+    ctx.beginPath();
+    // Start 2px before x=0 so butt cap falls outside the visible area
+    ctx.moveTo(-2, cy + amp * Math.sin(TAU * (-2) * cycles / size));
+    for (let x = 0; x <= size + 1; x++) {
+      ctx.lineTo(x, cy + amp * Math.sin(TAU * x * cycles / size));
+    }
+    ctx.stroke();
   }
 }
 
@@ -403,7 +503,7 @@ function renderGrid(ctx, size, s) {
 
 function renderDashes(ctx, size, s) {
   const density = s.density / 100;
-  const count = Math.round(15 + density * 130);
+  const count   = Math.round(15 + density * 130);
   const dashLen = size * (0.03 + sf(s) * 0.09);
   const strokeW = Math.max(2, dashLen * 0.28);
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
@@ -411,29 +511,25 @@ function renderDashes(ctx, size, s) {
   ctx.lineWidth = strokeW;
   ctx.lineCap = 'round';
   const rng = makePRNG(42);
-  const items = [];
-  for (let i = 0; i < count; i++) {
-    items.push({ x: rng() * size, y: rng() * size, a: rng() * Math.PI });
-  }
+  const items = Array.from({length: count}, () =>
+    ({ x: rng() * size, y: rng() * size, a: rng() * Math.PI }));
   for (const d of items) {
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       const cx = d.x + dx * size, cy = d.y + dy * size;
       if (cx + dashLen < 0 || cx - dashLen > size || cy + dashLen < 0 || cy - dashLen > size) continue;
       const ex = Math.cos(d.a) * dashLen / 2, ey = Math.sin(d.a) * dashLen / 2;
       ctx.beginPath();
-      ctx.moveTo(cx - ex, cy - ey);
-      ctx.lineTo(cx + ex, cy + ey);
+      ctx.moveTo(cx - ex, cy - ey); ctx.lineTo(cx + ex, cy + ey);
       ctx.stroke();
     }
   }
 }
 
 function renderZigzag(ctx, size, s) {
-  // Horizontal zigzag stripes. zigZ (even) half-periods per row width → seamless.
-  const n = elCount(s);
-  const sp = size / n;
-  const amp = sp * 0.32;
-  const lw = Math.max(1, sp * sf(s));
+  const n = elCount(s), sp = size / n;
+  const amp  = sp * 0.32;
+  const lw   = Math.max(1, sp * sf(s));
+  // Even zigZ half-periods → same start/end y → seamless horizontal join
   const zigZ = 2 * Math.max(2, Math.round(1 + (s.density / 100) * 7));
   const halfP = size / zigZ;
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
@@ -444,7 +540,6 @@ function renderZigzag(ctx, size, s) {
   for (let row = 0; row < n; row++) {
     const cy = row * sp + sp / 2;
     ctx.beginPath();
-    // Start one halfP before x=0 so no cap artifact at left edge
     for (let k = -1; k <= zigZ + 1; k++) {
       const x = k * halfP;
       const y = cy + (k % 2 === 0 ? -amp : amp);
@@ -455,33 +550,27 @@ function renderZigzag(ctx, size, s) {
 }
 
 function renderArcs(ctx, size, s) {
-  // Scattered C-shaped semicircles, snapped to 4 rotations.
   const density = s.density / 100;
-  const count = Math.round(10 + density * 65);
-  const arcR = size * (0.02 + sf(s) * 0.06);
+  const count   = Math.round(10 + density * 65);
+  const arcR    = size * (0.02 + sf(s) * 0.06);
   const strokeW = Math.max(2, arcR * 0.42);
   if (!s.transparentBg) { ctx.fillStyle = s.bg; ctx.fillRect(0, 0, size, size); }
   ctx.strokeStyle = s.fg;
   ctx.lineWidth = strokeW;
   ctx.lineCap = 'round';
   const rng = makePRNG(13);
-  const items = [];
-  for (let i = 0; i < count; i++) {
-    items.push({
-      x: rng() * size, y: rng() * size,
-      rot: Math.floor(rng() * 4) * (Math.PI / 2),
-    });
-  }
+  const items = Array.from({length: count}, () => ({
+    x: rng() * size, y: rng() * size,
+    rot: Math.floor(rng() * 4) * (Math.PI / 2),
+  }));
   const pad = arcR + strokeW;
   for (const arc of items) {
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       const cx = arc.x + dx * size, cy = arc.y + dy * size;
       if (cx + pad < 0 || cx - pad > size || cy + pad < 0 || cy - pad > size) continue;
       ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(arc.rot);
-      ctx.beginPath();
-      ctx.arc(0, 0, arcR, 0, Math.PI);  // semicircle
+      ctx.translate(cx, cy); ctx.rotate(arc.rot);
+      ctx.beginPath(); ctx.arc(0, 0, arcR, 0, Math.PI);
       ctx.stroke();
       ctx.restore();
     }
@@ -489,22 +578,25 @@ function renderArcs(ctx, size, s) {
 }
 
 const RENDERERS = {
-  'dots-grid':    renderDotsGrid,
-  'lines-h':      renderLinesH,
-  'lines-v':      renderLinesV,
-  'lines-diag':   renderLinesDiag,
-  'crosshatch':   renderCrosshatch,
-  'checkerboard': renderCheckerboard,
-  'grid':         renderGrid,
-  'dashes':       renderDashes,
-  'zigzag':       renderZigzag,
-  'arcs':         renderArcs,
+  'dots-grid':        renderDotsGrid,
+  'dots-staggered':   renderDotsStaggered,
+  'lines-h':          renderLinesH,
+  'lines-v':          renderLinesV,
+  'lines-diag':       renderLinesDiag,
+  'lines-diag-back':  renderLinesDiagBack,
+  'crosshatch':       renderCrosshatch,
+  'crosshatch-diag':  renderCrosshatchDiag,
+  'checkerboard':     renderCheckerboard,
+  'grid':             renderGrid,
+  'waves':            renderWaves,
+  'dashes':           renderDashes,
+  'zigzag':           renderZigzag,
+  'arcs':             renderArcs,
 };
 
 // ── Render pipeline ──
 const textureCvs = document.createElement('canvas');
-textureCvs.width = TEXTURE_SIZE;
-textureCvs.height = TEXTURE_SIZE;
+textureCvs.width = textureCvs.height = TEXTURE_SIZE;
 
 function renderTexture() {
   const ctx = textureCvs.getContext('2d');
@@ -514,37 +606,33 @@ function renderTexture() {
 
 function updatePreview() {
   renderTexture();
-
-  const cvs = document.getElementById('sidebar-preview');
+  const cvs  = document.getElementById('sidebar-preview');
   const wrap = cvs.parentElement;
-  const pw = wrap.clientWidth;
-  const ph = wrap.clientHeight;
-  cvs.width = pw;
+  const pw   = wrap.clientWidth;
+  const ph   = wrap.clientHeight;
+  cvs.width  = pw;
   cvs.height = ph;
-
   const pCtx = cvs.getContext('2d');
   pCtx.clearRect(0, 0, pw, ph);
-  // Draw 2×2 tiled preview
   const pat = pCtx.createPattern(textureCvs, 'repeat');
-  // Scale pattern so 2 tiles fit across the preview width
-  const scale = (pw / 2) / TEXTURE_SIZE;
-  const m = new DOMMatrix().scale(scale);
-  pat.setTransform(m);
+  // Show 3×3 tile repetitions in the preview square
+  const scale = (pw / 3) / TEXTURE_SIZE;
+  pat.setTransform(new DOMMatrix().scale(scale));
   pCtx.fillStyle = pat;
   pCtx.fillRect(0, 0, pw, ph);
 }
 
-// ── UI Wiring ──
+// ── UI wiring ──
 document.getElementById('pattern-select').addEventListener('change', e => {
   state.pattern = e.target.value; updatePreview();
 });
 document.getElementById('density').addEventListener('input', e => {
-  state.density = parseInt(e.target.value);
+  state.density = +e.target.value;
   document.getElementById('density-val').textContent = state.density;
   updatePreview();
 });
 document.getElementById('stroke').addEventListener('input', e => {
-  state.stroke = parseInt(e.target.value);
+  state.stroke = +e.target.value;
   document.getElementById('stroke-val').textContent = state.stroke;
   updatePreview();
 });
@@ -553,10 +641,10 @@ document.getElementById('bg-color').addEventListener('input', e => { state.bg = 
 document.getElementById('transparent-bg').addEventListener('change', e => { state.transparentBg = e.target.checked; updatePreview(); });
 
 // ── Download ──
-function triggerDownload(blob, filename) {
+function triggerDownload(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
+  a.href = url; a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
@@ -568,9 +656,9 @@ document.getElementById('download-png').addEventListener('click', () => {
 document.getElementById('download-jpg').addEventListener('click', () => {
   const flat = document.createElement('canvas');
   flat.width = flat.height = TEXTURE_SIZE;
-  const fCtx = flat.getContext('2d');
-  fCtx.fillStyle = '#ffffff'; fCtx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-  renderTexture(); fCtx.drawImage(textureCvs, 0, 0);
+  const fc = flat.getContext('2d');
+  fc.fillStyle = '#ffffff'; fc.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
+  renderTexture(); fc.drawImage(textureCvs, 0, 0);
   flat.toBlob(b => triggerDownload(b, `pattern-${state.pattern}-1024.jpg`), 'image/jpeg', 0.95);
 });
 
