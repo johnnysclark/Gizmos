@@ -274,6 +274,10 @@ input[type=checkbox] {
       <div class="slider-label"><span>Size</span><span id="stroke-val">80</span></div>
       <input type="range" id="stroke" min="1" max="100" value="80">
     </div>
+    <div class="slider-row">
+      <div class="slider-label"><span>Rotation</span><span id="rotation-val">0°</span></div>
+      <input type="range" id="rotation" min="0" max="360" value="0">
+    </div>
   </div>
 
   <div class="divider"></div>
@@ -307,6 +311,7 @@ const state = {
   pattern: 'dots-grid',
   density: 30,
   stroke: 80,
+  rotation: 0,
   fg: '#000000',
   bg: '#ffffff',
   transparentBg: false,
@@ -503,6 +508,26 @@ function renderTexture() {
   RENDERERS[state.pattern](ctx, TEXTURE_SIZE, state);
 }
 
+// Fill ctx with the tiled pattern at tileScale, rotated, with optional forced bg colour.
+// preFill: css colour string to paint first (JPG white base), or null to use state.
+function fillWithRotatedPattern(ctx, w, h, tileScale, preFill) {
+  ctx.clearRect(0, 0, w, h);
+  if (preFill) {
+    ctx.fillStyle = preFill; ctx.fillRect(0, 0, w, h);
+  } else if (!state.transparentBg) {
+    ctx.fillStyle = state.bg; ctx.fillRect(0, 0, w, h);
+  }
+  const pat = ctx.createPattern(textureCvs, 'repeat');
+  pat.setTransform(new DOMMatrix().scaleSelf(tileScale));
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate(state.rotation * Math.PI / 180);
+  const diag = Math.hypot(w, h);
+  ctx.fillStyle = pat;
+  ctx.fillRect(-diag / 2, -diag / 2, diag, diag);
+  ctx.restore();
+}
+
 function updatePreview() {
   renderTexture();
   const cvs  = document.getElementById('sidebar-preview');
@@ -511,14 +536,7 @@ function updatePreview() {
   const ph   = wrap.clientHeight;
   cvs.width  = pw;
   cvs.height = ph;
-  const pCtx = cvs.getContext('2d');
-  pCtx.clearRect(0, 0, pw, ph);
-  const pat = pCtx.createPattern(textureCvs, 'repeat');
-  // Show 3×3 tile repetitions in the preview square
-  const scale = (pw / 3) / TEXTURE_SIZE;
-  pat.setTransform(new DOMMatrix().scale(scale));
-  pCtx.fillStyle = pat;
-  pCtx.fillRect(0, 0, pw, ph);
+  fillWithRotatedPattern(cvs.getContext('2d'), pw, ph, (pw / 3) / TEXTURE_SIZE);
 }
 
 // ── UI wiring ──
@@ -535,6 +553,11 @@ document.getElementById('stroke').addEventListener('input', e => {
   document.getElementById('stroke-val').textContent = state.stroke;
   updatePreview();
 });
+document.getElementById('rotation').addEventListener('input', e => {
+  state.rotation = +e.target.value;
+  document.getElementById('rotation-val').textContent = state.rotation + '°';
+  updatePreview();
+});
 document.getElementById('fg-color').addEventListener('input', e => { state.fg = e.target.value; updatePreview(); });
 document.getElementById('bg-color').addEventListener('input', e => { state.bg = e.target.value; updatePreview(); });
 document.getElementById('transparent-bg').addEventListener('change', e => { state.transparentBg = e.target.checked; updatePreview(); });
@@ -549,16 +572,18 @@ function triggerDownload(blob, name) {
 
 document.getElementById('download-png').addEventListener('click', () => {
   renderTexture();
-  textureCvs.toBlob(b => triggerDownload(b, `pattern-${state.pattern}-1024.png`), 'image/png');
+  const exp = document.createElement('canvas');
+  exp.width = exp.height = TEXTURE_SIZE;
+  fillWithRotatedPattern(exp.getContext('2d'), TEXTURE_SIZE, TEXTURE_SIZE, 1);
+  exp.toBlob(b => triggerDownload(b, `pattern-${state.pattern}-1024.png`), 'image/png');
 });
 
 document.getElementById('download-jpg').addEventListener('click', () => {
-  const flat = document.createElement('canvas');
-  flat.width = flat.height = TEXTURE_SIZE;
-  const fc = flat.getContext('2d');
-  fc.fillStyle = '#ffffff'; fc.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-  renderTexture(); fc.drawImage(textureCvs, 0, 0);
-  flat.toBlob(b => triggerDownload(b, `pattern-${state.pattern}-1024.jpg`), 'image/jpeg', 0.95);
+  renderTexture();
+  const exp = document.createElement('canvas');
+  exp.width = exp.height = TEXTURE_SIZE;
+  fillWithRotatedPattern(exp.getContext('2d'), TEXTURE_SIZE, TEXTURE_SIZE, 1, '#ffffff');
+  exp.toBlob(b => triggerDownload(b, `pattern-${state.pattern}-1024.jpg`), 'image/jpeg', 0.95);
 });
 
 // ── Init ──
