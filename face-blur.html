@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <title>Face Blur</title>
+  <link rel="stylesheet" href="css/face-blur.css">
+</head>
+<body>
+
+  <header class="fb-header">
+    <h1 class="fb-title">Face Blur</h1>
+    <p class="fb-privacy">Photos stay on your device. Nothing is uploaded.</p>
+  </header>
+
+  <main class="fb-main">
+    <section class="fb-picker" id="fb-picker">
+      <label class="fb-picker-btn" for="fb-file-input">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="2"/>
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M8 5l2-2h4l2 2"/>
+        </svg>
+        <span>Choose photos</span>
+      </label>
+      <input id="fb-file-input" type="file" accept="image/*" multiple hidden>
+      <p class="fb-picker-hint">Pick from your camera roll or take a new photo. Faces are detected on your device and you can review every one before exporting.</p>
+    </section>
+
+    <section class="fb-status" id="fb-status" aria-live="polite"></section>
+
+    <section class="fb-cards" id="fb-cards"></section>
+  </main>
+
+  <footer class="fb-footer" id="fb-footer" hidden>
+    <div class="fb-footer-info" id="fb-footer-info">0 photos</div>
+    <button class="fb-footer-btn" id="fb-download-all" type="button">Download all as ZIP</button>
+  </footer>
+
+  <template id="fb-card-template">
+    <article class="fb-card">
+      <div class="fb-card-stage">
+        <img class="fb-card-img" alt="">
+        <div class="fb-card-overlay"></div>
+        <div class="fb-card-spinner" hidden>
+          <div class="fb-spinner"></div>
+        </div>
+      </div>
+      <div class="fb-card-meta">
+        <span class="fb-card-name"></span>
+        <span class="fb-card-count"></span>
+      </div>
+      <div class="fb-card-actions">
+        <button class="fb-card-btn fb-card-redetect" type="button">Re-detect</button>
+        <button class="fb-card-btn fb-card-download" type="button">Download</button>
+        <button class="fb-card-btn fb-card-remove" type="button" aria-label="Remove photo">Remove</button>
+      </div>
+      <p class="fb-card-warning" hidden>No faces detected. Drag on the photo to add a manual blur if anyone is visible.</p>
+    </article>
+  </template>
+
+  <script type="module" src="js/face-blur.js"></script>
+</body>
+</html>
