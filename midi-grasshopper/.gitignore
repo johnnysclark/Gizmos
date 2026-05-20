@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# Local copies of derived/built artifacts the user generates in Live
+ableton/MidiToOSC.amxd
+ableton/node_modules/
