@@ -32,7 +32,11 @@ import time
 # still appended). Floats and ints are big-endian.
 
 def _pad4(b: bytes) -> bytes:
-    return b + b"\x00" * (4 - (len(b) % 4))
+    # OSC: total length must be a multiple of 4. Caller passes data
+    # that already ends in its terminating null, so 0 additional pad
+    # bytes is correct when len(b) is already 4-aligned.
+    pad = (4 - (len(b) % 4)) % 4
+    return b + b"\x00" * pad
 
 
 def _enc_string(s: str) -> bytes:
@@ -188,6 +192,11 @@ def cmd_selftest():
         ("/bar", ["hello"]),
         ("/mix", [1, 2.5, "x"]),
         ("/", [0.0]),
+        # Addresses whose (len + 1) is already a multiple of 4 — these
+        # caught an over-padding bug in _pad4 once. Keep them here.
+        ("/cc/127", [0.0]),
+        ("/abc", [1.0]),
+        ("/1234567", [42]),
     ]
     for addr, args in cases:
         buf = encode_message(addr, *args)
